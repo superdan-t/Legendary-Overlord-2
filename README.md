@@ -19,5 +19,7 @@ After command processing, the data buffer is automatically cleared to prevent fu
 To avoid explaining it multiple times, I frequently mention "lists," even though the array of bytes doesn't contain an actual List object. A list in an array means a sequence of values that varies in length. Because arrays are simple, the interpreter would have no way to tell how many elements are in the list, unless you specify. And that is exatly what you have to do. When a command asks for a list, begin the list with a count of its elements. There is no need to delimit the list and/or each element. Just make sure that the first value of the list is a count of the number of elements, and then proceed with listing the values.
 
 The first byte of the array is used to determine the command. Each command will use the data in its own way.
+
 0. A ping to check device existance. Returns positive acknowledge.
+
 1. Set a dimmer. Following are two lists, with the first one specifying dimmers and the second one values. If there are more dimmers than values, then the last value will be used multiple times. If there are no values, then they will all be set to 0.
