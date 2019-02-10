@@ -10,6 +10,11 @@
 
 #define ERROR_OUT_OF_RANGE 1
 
+#define PERM_SERIAL 1
+#define PERM_UDP 2
+#define PERM_SCRIPT 3
+#define PERM_HUMAN 4
+
 #define EEPROM_VARIABLE_MAX 6
 #define MEM_WEB_PORT 0
 #define MEM_UDP_PORT 2
@@ -42,7 +47,8 @@ const byte MAC_ADDRESS[] = {
 unsigned int webserverPort = 80;
 unsigned int udpReceiverPort = 1154;
 byte dataReplySize = 0;
-char dataBuffer[UDP_TX_PACKET_MAX_SIZE];
+byte dataBuffer[UDP_TX_PACKET_MAX_SIZE];
+byte replyBuffer[UDP_TX_PACKET_MAX_SIZE];
 byte ipAddress[] = {192, 168, 1, 150};
 EthernetUDP udp;
 EthernetServer webserver(webserverPort);
