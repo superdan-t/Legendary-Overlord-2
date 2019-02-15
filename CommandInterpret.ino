@@ -1,6 +1,6 @@
-void interpretData(byte permissionLevel) {
+void interpretData(byte dataBuffer[], byte permissionLevel) {
 
-  replySize = 0;
+  dataReplySize = 0;
 
   if (0 == dataBuffer[0]) {
     
@@ -24,10 +24,10 @@ void interpretData(byte permissionLevel) {
 }
 
 void replyAck(boolean type) {
-  replySize = 1;
+  dataReplySize = 1;
   if (type) {
-    dataReplyBuffer[0] = 6;
+    replyBuffer[0] = 6;
   } else {
-    dataReplyBuffer[0] = 21;
+    replyBuffer[0] = 21;
   }
 }

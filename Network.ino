@@ -8,7 +8,7 @@ void initNetwork() {
 void udpServer() {
   int packetSize = udp.parsePacket();
   if (0 < packetSize) {
-    udp.read(dataBuffer, UDP_TX_PACKET_MAX_SIZE);
+//    udp.read(dataBuffer, UDP_TX_PACKET_MAX_SIZE);
 
     udp.beginPacket(udp.remoteIP(), udp.remotePort());
     udp.write(replyBuffer, dataReplySize);

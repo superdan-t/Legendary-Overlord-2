@@ -47,7 +47,7 @@ const byte MAC_ADDRESS[] = {
 unsigned int webserverPort = 80;
 unsigned int udpReceiverPort = 1154;
 byte dataReplySize = 0;
-byte dataBuffer[UDP_TX_PACKET_MAX_SIZE];
+//byte dataBuffer[UDP_TX_PACKET_MAX_SIZE];
 byte replyBuffer[UDP_TX_PACKET_MAX_SIZE];
 byte ipAddress[] = {192, 168, 1, 150};
 EthernetUDP udp;
@@ -58,6 +58,7 @@ EthernetServer webserver(webserverPort);
 struct SerialInterface {
   byte mode = 0;
   boolean busy = 0;
+  byte data[50];
 };
 
 SerialInterface serialInterface[4];
