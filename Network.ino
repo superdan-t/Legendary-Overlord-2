@@ -11,7 +11,7 @@ void udpServer() {
 //    udp.read(dataBuffer, UDP_TX_PACKET_MAX_SIZE);
 
     udp.beginPacket(udp.remoteIP(), udp.remotePort());
-    udp.write(replyBuffer, dataReplySize);
+    udp.write(replyBuffer, replySize);
     udp.endPacket();
     
   }

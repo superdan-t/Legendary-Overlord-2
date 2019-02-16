@@ -34,6 +34,9 @@
 byte errorLevel = 0;
 byte systemName = 0;
 
+byte replyBuffer[UDP_TX_PACKET_MAX_SIZE >= 50 ? UDP_TX_PACKET_MAX_SIZE : 50];
+byte replySize;
+
 //Clock
 const String daysOfTheWeekShort[7] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 DateTime now;
@@ -46,9 +49,7 @@ const byte MAC_ADDRESS[] = {
 };
 unsigned int webserverPort = 80;
 unsigned int udpReceiverPort = 1154;
-byte dataReplySize = 0;
-//byte dataBuffer[UDP_TX_PACKET_MAX_SIZE];
-byte replyBuffer[UDP_TX_PACKET_MAX_SIZE];
+byte udpBuffer[UDP_TX_PACKET_MAX_SIZE];
 byte ipAddress[] = {192, 168, 1, 150};
 EthernetUDP udp;
 EthernetServer webserver(webserverPort);
@@ -65,6 +66,20 @@ SerialInterface serialInterface[4];
 
 //LCD Variables
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
+
+//Dimmers
+struct Dimmer {
+  byte pin;
+  byte method;
+  byte value;
+  byte function;
+  byte data[3];
+  boolean enabled;
+  boolean bipolar;
+  boolean inverse;
+};
+
+Dimmer dimmers[64];
 
 void setup() {
 
