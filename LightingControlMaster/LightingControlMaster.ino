@@ -1,5 +1,5 @@
 /*
-   LightingControlMaster by Daniel Tierney.
+   LightingControlMaster by Daniel Tierney (https://github.com/RandomShrub)
 
    Thanks to Simon Merrett for interrupt-based rotary encoder setup, who also credits Oleg Mazurov, Nick Gammon, rt, Steve Spence
 
