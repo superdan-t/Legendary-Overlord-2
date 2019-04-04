@@ -7,6 +7,14 @@
 
 #include <EEPROM.h>
 
+#define d_DimmerCount 50
+
+#define d_Pin = 0
+#define d_Enabled = 1
+#define d_Bipolar = 2
+#define d_Inverse = 3
+#define d_Method = 5
+
 String inputString = "";
 boolean inputComplete = false;
 
@@ -27,10 +35,11 @@ struct Dimmer {
   boolean enabled;
   boolean bipolar;
   boolean inverse;
+  boolean dirty;
 };
 long nextDimmerTick;
 long nextSecond;
-Dimmer dimmers[50];
+Dimmer dimmers[d_DimmerCount];
 
 void setup() {
 
@@ -54,7 +63,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(encoderPinA), EncoderPinA, RISING);
   attachInterrupt(digitalPinToInterrupt(encoderPinB), EncoderPinB, RISING);
 
-  initDimmers(true);
+  initDimmers();
 
 }
 
