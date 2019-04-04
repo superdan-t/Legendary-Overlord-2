@@ -9,11 +9,11 @@
 
 #define d_DimmerCount 50
 
-#define d_Pin = 0
-#define d_Enabled = 1
-#define d_Bipolar = 2
-#define d_Inverse = 3
-#define d_Method = 5
+#define d_Pin 0
+#define d_Enabled 1
+#define d_Bipolar 2
+#define d_Inverse 3
+#define d_Method 5
 
 String inputString = "";
 boolean inputComplete = false;
@@ -46,18 +46,6 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Serial connected");
 
-  dimmers[0].pin = 11;
-  dimmers[0].enabled = true;
-  dimmers[0].function = 1;
-  dimmers[0].value = 255;
-  dimmers[0].data[0] = 0;
-  dimmers[0].data[1] = 1;
-  dimmers[0].data[2] = 1;
-
-  if (dimmers[0].enabled) {
-    pinMode(dimmers[0].pin, OUTPUT);
-  }
-
   pinMode(encoderPinA, INPUT_PULLUP);
   pinMode(encoderPinB, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(encoderPinA), EncoderPinA, RISING);
@@ -74,7 +62,7 @@ void loop() {
     inputString = "";
     inputComplete = false;
   } else if (inputComplete) {
-    dimmers[0].value = inputString.toInt();
+    setLevel(&dimmers[0], inputString.toInt());
     Serial.println("Set value to " + inputString);
     inputComplete = false;
     inputString = "";
