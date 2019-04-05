@@ -6,6 +6,7 @@
 */
 
 #include <EEPROM.h>
+#include <LiquidCrystal_I2C.h>
 
 #define d_DimmerCount 50
 
@@ -25,6 +26,12 @@ volatile byte bFlag = 0;
 volatile byte encoderPos = 0;
 volatile byte oldEncPos = 0;
 volatile byte reading = 0;
+
+LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
+boolean screenHome;
+byte homeMode;
+byte timeoutDuration;
+byte timeout;
 
 struct Dimmer {
   byte pin;
@@ -46,34 +53,27 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Serial connected");
 
+  lcd.begin(16, 2);
+  lcd.print("Hello, World!");
+  lcd.setCursor(0, 1);
+  lcd.print("Init..");
+
+  initDimmers();
+
   pinMode(encoderPinA, INPUT_PULLUP);
   pinMode(encoderPinB, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(encoderPinA), EncoderPinA, RISING);
   attachInterrupt(digitalPinToInterrupt(encoderPinB), EncoderPinB, RISING);
 
-  initDimmers();
+  screenHome = true;
+  timeoutDuration = 60;
+
+  lcd.setBacklight(0);
+  lcd.noDisplay();
 
 }
 
 void loop() {
-
-  if (inputComplete && inputString.equals("view")) {
-    Serial.println(dimmers[0].value);
-    inputString = "";
-    inputComplete = false;
-  } else if (inputComplete) {
-    setLevel(&dimmers[0], inputString.toInt());
-    Serial.println("Set value to " + inputString);
-    inputComplete = false;
-    inputString = "";
-  }
-
-  if (encoderPos != oldEncPos) {
-    Serial.print("Encoder pos: ");
-    Serial.println(encoderPos);
-    setLevel(&dimmers[0], dimmers[0].value + (oldEncPos - encoderPos) * 3);
-    oldEncPos = encoderPos;
-  }
 
   if (millis() >= nextDimmerTick) {
     nextDimmerTick = millis() + 50;
@@ -81,6 +81,7 @@ void loop() {
   }
 
   if (millis() >= nextSecond) {
+    updateHomeScreen();
     nextSecond = millis() + 1000;
   }
 
