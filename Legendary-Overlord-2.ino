@@ -1,102 +1,106 @@
-//Created 2/1/2019
+/*
+
+   Legendary-Overlord-2 by Daniel Tierney uses LightingControlMaster
+ 
+   LightingControlMaster by Daniel Tierney (https://github.com/RandomShrub)
+
+   Thanks to Simon Merrett for interrupt-based rotary encoder setup, who also credits Oleg Mazurov, Nick Gammon, rt, Steve Spence
+
+*/
 
 #include <EEPROM.h>
-#include <Ethernet.h>
-#include <EthernetUdp.h>
 #include <LiquidCrystal_I2C.h>
-#include <RTClib.h>
 
-//Operational Constants
+#define d_DimmerCount 50
 
-#define ERROR_OUT_OF_RANGE 1
+#define d_Pin 0
+#define d_Enabled 1
+#define d_Bipolar 2
+#define d_Inverse 3
+#define d_Method 5
 
-#define PERM_SERIAL 1
-#define PERM_UDP 2
-#define PERM_SCRIPT 3
-#define PERM_HUMAN 4
+const byte encoderPinA = 2;
+const byte encoderPinB = 3;
+volatile byte aFlag = 0;
+volatile byte bFlag = 0;
+volatile byte encoderPos = 0;
+volatile byte oldEncPos = 0;
+volatile byte reading = 0;
 
-#define EEPROM_VARIABLE_MAX 6
-#define MEM_WEB_PORT 0
-#define MEM_UDP_PORT 2
-#define MEM_IP 4
-#define MEM_SYSNAME 9
-#define MEM_SERIAL_MODE 10
+byte dataBuffer[50];
+byte serialIndex = 0;
+byte serialLength = 0;
 
-#define LOG_URGENT 0
-#define LOG_INFO 1
-
-#define SERIAL_DISABLED 0
-#define SERIAL_SDSCP 1
-#define SERIAL_SDSCP2 2
-#define SERIAL_MIDI 3
-#define SERIAL_HUMAN 4
-
-byte errorLevel = 0;
-byte systemName = 0;
-
-byte replyBuffer[UDP_TX_PACKET_MAX_SIZE >= 50 ? UDP_TX_PACKET_MAX_SIZE : 50];
-byte replySize;
-
-//Clock
-const String daysOfTheWeekShort[7] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-DateTime now;
-RTC_DS3231 rtc;
-
-//Internet Variables
-
-const byte MAC_ADDRESS[] = {
-  0xDE, 0xAD, 0xBE, 0xEF, 0x91, 0x39
-};
-unsigned int webserverPort = 80;
-unsigned int udpReceiverPort = 1154;
-byte udpBuffer[UDP_TX_PACKET_MAX_SIZE];
-byte ipAddress[] = {192, 168, 1, 150};
-EthernetUDP udp;
-EthernetServer webserver(webserverPort);
-
-//Serial Variables
-
-struct SerialInterface {
-  byte mode = 0;
-  boolean busy = 0;
-  byte data[50];
-};
-
-SerialInterface serialInterface[4];
-
-//LCD Variables
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
+boolean screenHome;
+byte homeMode;
+byte timeoutDuration;
+byte timeout;
 
-//Dimmers
 struct Dimmer {
   byte pin;
   byte method;
-  byte value;
+  byte value; //Use setLevel(Dimmer dim, byte value). This will not update it unless you call runDimmers(true)
   byte function;
-  byte data[3];
+  byte data[4];
   boolean enabled;
   boolean bipolar;
   boolean inverse;
+  boolean dirty;
 };
-
-Dimmer dimmers[64];
+long nextDimmerTick;
+long nextSecond;
+Dimmer dimmers[d_DimmerCount];
 
 void setup() {
 
-  rtc.begin();
+  Serial.begin(115200);
+  Serial.println("Serial connected");
 
   lcd.begin(16, 2);
   lcd.print("Hello, World!");
   lcd.setCursor(0, 1);
-  lcd.print("Initializing...");
+  lcd.print("Init..");
 
-  loadAllVariables();
-  initSerial();
-  initNetwork();
+  initDimmers();
+
+  pinMode(encoderPinA, INPUT_PULLUP);
+  pinMode(encoderPinB, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(encoderPinA), EncoderPinA, RISING);
+  attachInterrupt(digitalPinToInterrupt(encoderPinB), EncoderPinB, RISING);
+
+  screenHome = true;
+  timeoutDuration = 60;
+
+  lcd.setBacklight(0);
+  lcd.noDisplay();
 
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
 
+  if (millis() >= nextDimmerTick) {
+    nextDimmerTick = millis() + 50;
+    runDimmers(false);
+  }
+
+  if (millis() >= nextSecond) {
+    updateHomeScreen();
+    nextSecond = millis() + 1000;
+  }
+
+}
+
+void serialEvent() {
+  while (Serial.available()) {
+    byte newData = Serial.read();
+  }
+}
+
+boolean pinIsValid(byte pin) {
+  if (pin <= 3) {
+    return false;
+  } else {
+    return true;
+  }
 }

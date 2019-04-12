@@ -75,6 +75,17 @@ void setup() {
 
 void loop() {
 
+  if (inputComplete && inputString.equals("view")) {
+    Serial.println(dimmers[0].value);
+    inputString = "";
+    inputComplete = false;
+  } else if (inputComplete) {
+    dimmers[0].value = inputString.toInt();
+    Serial.println("Set value to " + inputString);
+    inputComplete = false;
+    inputString = "";
+  }
+
   if (millis() >= nextDimmerTick) {
     nextDimmerTick = millis() + 50;
     runDimmers(false);
