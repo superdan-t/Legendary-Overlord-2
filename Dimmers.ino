@@ -1,4 +1,11 @@
 /**
+   Doesn't do anything. Just prints the values so you can see them
+*/
+void setLevelTest(byte dimmerIndex, byte value) {
+  Serial.println("Set dimmer " + (String)dimmerIndex + " to level " + (String)value);
+}
+
+/**
    Sets the output level of the specified dimmer. Accepts dimmer struct, not an index.
 */
 void setLevel(Dimmer *dim, byte value) {
@@ -63,23 +70,25 @@ void runDimmers(boolean forceAll) {
 /**
    Loads properties from memory and sets necessary pins to outputs
 */
-void initDimmers() {
+void initDimmers(boolean loadMem) {
 
   for (byte i = 0; i < d_DimmerCount; i++) {
     digitalWrite(dimmers[i].pin, LOW);
     pinMode(dimmers[i].pin, INPUT);
   }
+  
+  if (loadMem) {
+    for (byte i = 0; i < d_DimmerCount; i++) {
+      dimmers[i].pin = EEPROM.read(EEPROM.length() - i * 2 - 1);
+      byte compProps = EEPROM.read(EEPROM.length() - i * 2 - 2);
+      dimmers[i].enabled = bitRead(compProps, 0);
+      dimmers[i].bipolar = bitRead(compProps, 1);
+      dimmers[i].inverse = bitRead(compProps, 2);
+      for (byte i = 0; i < 4; i++) {
+        bitWrite(dimmers[i].method, i, bitRead(compProps, i + 4));
+      }
 
-  for (byte i = 0; i < d_DimmerCount; i++) {
-    dimmers[i].pin = EEPROM.read(EEPROM.length() - i * 2 - 1);
-    byte compProps = EEPROM.read(EEPROM.length() - i * 2 - 2);
-    dimmers[i].enabled = bitRead(compProps, 0);
-    dimmers[i].bipolar = bitRead(compProps, 1);
-    dimmers[i].inverse = bitRead(compProps, 2);
-    for (byte i = 0; i < 4; i++) {
-      bitWrite(dimmers[i].method, i, bitRead(compProps, i + 4));
     }
-
   }
 
   for (byte i = 0; i < d_DimmerCount; i++) {
@@ -118,14 +127,17 @@ byte getDimmerProperty(Dimmer *dim, byte prop) {
 
    To avoid having to reference numbers, all properties have constants to help:
    d_Pin, d_Enabled, d_Bipolar, d_Inverse, d_Method
-   
+
 */
 void setDimmerProperty(Dimmer *dim, byte prop, byte value) {
+
+  Serial.println("Property " + (String)prop + " was set to " + (String)value);
+
   switch (prop) {
     case 0:
       if (pinIsValid(value)) {
         dim->pin = value;
-        initDimmers();
+        initDimmers(false);
       }
       break;
     case 1:
@@ -145,12 +157,12 @@ void setDimmerProperty(Dimmer *dim, byte prop, byte value) {
   }
 
   dim->dirty = true;
-  
+
 }
 
 /**
- * Saves any updated system dimmers to the EEPROM
- */
+   Saves any updated system dimmers to the EEPROM
+*/
 void bindAll() {
   byte compProps;
   for (int i = 0; i < d_DimmerCount; i++) {
@@ -170,7 +182,7 @@ void bindAll() {
       if (compProps != EEPROM.read(EEPROM.length() - i * 2 - 2)) {
         EEPROM.update(EEPROM.length() - i * 2 - 2, compProps);
       }
-      
+
     }
   }
 }

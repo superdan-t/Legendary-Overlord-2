@@ -28,6 +28,7 @@ volatile byte oldEncPos = 0;
 volatile byte reading = 0;
 
 byte dataBuffer[50];
+byte replyBuffer[50];
 byte serialIndex = 0;
 byte serialLength = 0;
 
@@ -62,7 +63,7 @@ void setup() {
   lcd.setCursor(0, 1);
   lcd.print("Init..");
 
-  initDimmers();
+  initDimmers(true);
 
   pinMode(encoderPinA, INPUT_PULLUP);
   pinMode(encoderPinB, INPUT_PULLUP);
@@ -94,6 +95,16 @@ void loop() {
 void serialEvent() {
   while (Serial.available()) {
     byte newData = Serial.read();
+    if (0 == serialLength) {
+      serialLength = newData;
+    } else {
+      dataBuffer[serialIndex++] = newData;
+      if (serialIndex >= serialLength) {
+        processData(dataBuffer, 'S');
+        serialIndex = 0;
+        serialLength = 0;
+      }
+    }
   }
 }
 
