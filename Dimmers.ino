@@ -1,11 +1,4 @@
 /**
-   Doesn't do anything. Just prints the values so you can see them
-*/
-void setLevelTest(byte dimmerIndex, byte value) {
-  Serial.println("Set dimmer " + (String)dimmerIndex + " to level " + (String)value);
-}
-
-/**
    Sets the output level of the specified dimmer. Accepts dimmer struct, not an index.
 */
 void setLevel(Dimmer *dim, byte value) {
@@ -131,8 +124,6 @@ byte getDimmerProperty(Dimmer *dim, byte prop) {
 */
 void setDimmerProperty(Dimmer *dim, byte prop, byte value) {
 
-  Serial.println("Property " + (String)prop + " was set to " + (String)value);
-
   switch (prop) {
     case 0:
       if (pinIsValid(value)) {
@@ -186,26 +177,3 @@ void bindAll() {
     }
   }
 }
-/*
-   Obsolete and included for reference
-  void setDimmerProperty(byte index, byte prop, byte value) {
-  if (prop == 0) {
-    if (!pinIsValid(value)) {
-      return;
-    }
-    EEPROM.update(EEPROM.length() - index * 2 - 1, value);
-    initDimmers(true);
-  } else if (prop >= 1 && prop <= 4) {
-    byte compProps = EEPROM.read(EEPROM.length() - index * 2 - 2);
-    bitWrite(compProps, prop - 1, value);
-    EEPROM.update(EEPROM.length() - index * 2 - 2, compProps);
-    initDimmers(false);
-  } else if (prop >= 5 && prop <= 8) {
-    byte compProps = EEPROM.read(EEPROM.length() - index * 2 - 2);
-    for (byte i = 0; i < 4; i++) {
-      bitWrite(compProps, i + 4, bitRead(value, i));
-    }
-    EEPROM.update(EEPROM.length() - index * 2 - 2, compProps);
-    initDimmers(false);
-  }
-  }*/
