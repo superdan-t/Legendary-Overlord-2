@@ -106,6 +106,43 @@ void processData(byte *buf, char inType) {
      }
     
     
+  } else if (buf[0] == 3) {
+    i2cAddr = buf[1];
+    EEPROM.update(m_I2C_Addr, i2cAddr);
+    Wire.end();
+    Wire.begin(i2cAddr);
   }
 
+}
+
+void receiveEvent(int amount) {
+  while (Wire.available()) {
+    wireBuffer[wireIndex] = Wire.read();
+    Serial.println(wireBuffer[wireIndex]); //Debugging!!! Removal is required
+    wireIndex++;
+  }
+  processData(wireBuffer, 'W');
+  
+  //Even if there is a reply, we can't send it back until it's requested.
+  if (replySize > 0) {
+    for (byte i = 0; i < replySize; i++) {
+      wireReply[i] = replyBuffer[i]; //Set aside the reply for later and free up the buffer
+    }
+    wireReplySize = replySize;
+    replySize = 0; //The replyBuffer has been copied and is now free
+  }
+  
+}
+
+void requestEvent() {
+  
+  if (wireReplySize > 0) {
+    for (byte i = 0; i < wireReplySize; i++) {
+      Wire.write(wireReply[i]);
+    }
+    wireReplySize = 0;
+  } else {
+    //Something has to be sent back, so if there is nothing waiting to be sent, send a NAK.
+    Wire.write(21);
+  }
 }

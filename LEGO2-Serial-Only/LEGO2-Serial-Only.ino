@@ -9,9 +9,7 @@
 */
 
 #include <EEPROM.h>
-#include <Ethernet.h>
-#include <EthernetUdp.h>
-#include <LiquidCrystal_I2C.h>
+#include <Wire.h>
 
 #define d_DimmerCount 50
 
@@ -21,23 +19,7 @@
 #define d_Inverse 3
 #define d_Method 5
 
-#define m_UdpPort 0
-#define m_IPAddr 1
-#define m_DisplayTimeout 5
-
-const byte encoderPinA = 2;
-const byte encoderPinB = 3;
-volatile byte aFlag = 0;
-volatile byte bFlag = 0;
-volatile byte encoderPos = 0;
-volatile byte oldEncPos = 0;
-volatile byte reading = 0;
-
-const byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0x91, 0x39};
-byte ip[] = {192, 168, 1, 167};
-byte socketPort = 0;
-byte packetBuffer[UDP_TX_PACKET_MAX_SIZE];
-EthernetUDP socket;
+#define m_I2C_Addr 0
 
 byte dataBuffer[50];
 byte replyBuffer[50];
@@ -45,11 +27,11 @@ byte replySize = 0;
 byte serialIndex = 0;
 byte serialLength = 0;
 
-LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
-boolean screenHome;
-byte homeMode;
-byte timeoutDuration;
-byte timeout;
+byte i2cAddr = 0;
+byte wireBuffer[32];
+byte wireReply[32];
+byte wireReplySize = 0;
+byte wireIndex = 0;
 
 struct Dimmer {
   byte pin;
@@ -70,30 +52,12 @@ void setup() {
 
   Serial.begin(115200);
 
-  lcd.begin(16, 2);
-  lcd.print("Hello, World!");
-  lcd.setCursor(0, 1);
-  lcd.print("Init..");
-
   initDimmers(true);
 
-  pinMode(encoderPinA, INPUT_PULLUP);
-  pinMode(encoderPinB, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(encoderPinA), EncoderPinA, RISING);
-  attachInterrupt(digitalPinToInterrupt(encoderPinB), EncoderPinB, RISING);
-
-  screenHome = true;
-  timeoutDuration = EEPROM.read(m_DisplayTimeout);
-  socketPort = EEPROM.read(m_UdpPort);
-  ip[0] = EEPROM.read(m_IPAddr);
-  ip[1] = EEPROM.read(m_IPAddr + 1);
-  ip[2] = EEPROM.read(m_IPAddr + 2);
-  ip[3] = EEPROM.read(m_IPAddr + 3);
-
-//  beginNetwork();
-
-  lcd.setBacklight(0);
-  lcd.noDisplay();
+  i2cAddr = EEPROM.read(m_I2C_Addr);
+  Wire.begin(i2cAddr);
+  Wire.onReceive(receiveEvent);
+  Wire.onRequest(requestEvent);
 
 }
 
@@ -102,11 +66,6 @@ void loop() {
   if (millis() >= nextDimmerTick) {
     nextDimmerTick = millis() + 50;
     runDimmers(false);
-  }
-
-  if (millis() >= nextSecond) {
-    updateHomeScreen();
-    nextSecond = millis() + 1000;
   }
 
 }

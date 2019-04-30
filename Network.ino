@@ -17,7 +17,9 @@ void checkSocket() {
   socket.beginPacket(socket.remoteIP(), socket.remotePort());
 
   if (replySize != 0) {
+    socket.write(replySize);
     socket.write(replyBuffer, replySize);
+    replySize = 0;
   } else {
     socket.write(1);
     socket.write(6);
