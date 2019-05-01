@@ -116,11 +116,14 @@ void processData(byte *buf, char inType) {
 }
 
 void receiveEvent(int amount) {
+  
   while (Wire.available()) {
     wireBuffer[wireIndex] = Wire.read();
-    Serial.println(wireBuffer[wireIndex]); //Debugging!!! Removal is required
     wireIndex++;
   }
+
+  wireIndex = 0;
+  
   processData(wireBuffer, 'W');
   
   //Even if there is a reply, we can't send it back until it's requested.

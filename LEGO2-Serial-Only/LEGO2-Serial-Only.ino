@@ -2,6 +2,8 @@
 
    Legendary-Overlord-2 by Daniel Tierney uses LightingControlMaster
 
+   This edition of LEGO2 has no special addons, but it talks via serial and I2C.
+
    LightingControlMaster by Daniel Tierney (https://github.com/RandomShrub)
 
    Thanks to Simon Merrett for interrupt-based rotary encoder setup, who also credits Oleg Mazurov, Nick Gammon, rt, Steve Spence
