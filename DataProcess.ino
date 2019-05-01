@@ -5,7 +5,7 @@ void processData(byte *buf, char inType) {
     replySize = 1;
   } else if (buf[0] == 1) {
 
-     //Do I want to look at this ever again? No. Absolutely not. And you don't either. Seriously. Read the docs, not the code.
+     //Do I want to look at this ever again? No. Absolutely not. And you don't either.
     if (buf[2 + buf[1]] == 0) {
 
       for (byte i = 0; i < buf[1]; i++) {
