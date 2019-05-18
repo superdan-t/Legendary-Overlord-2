@@ -12,6 +12,8 @@
 #include <Ethernet.h>
 #include <EthernetUdp.h>
 #include <LiquidCrystal_I2C.h>
+#include <RTClib.h>
+#include <Wire.h>
 
 #define d_DimmerCount 50
 
@@ -33,6 +35,11 @@ volatile byte encoderPos = 0;
 volatile byte oldEncPos = 0;
 volatile byte reading = 0;
 
+RTC_DS3231 rtc;
+const String daysOfTheWeek[7] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+const String daysOfTheWeekShort[7] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+DateTime now;
+
 const byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0x91, 0x39};
 byte ip[] = {192, 168, 1, 167};
 byte socketPort = 0;
@@ -47,6 +54,7 @@ byte serialLength = 0;
 
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 boolean screenHome;
+boolean lcdEnabled = true;
 byte homeMode;
 byte timeoutDuration;
 byte timeout;
@@ -77,12 +85,15 @@ void setup() {
 
   initDimmers(true);
 
+  rtc.begin();
+
   pinMode(encoderPinA, INPUT_PULLUP);
   pinMode(encoderPinB, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(encoderPinA), EncoderPinA, RISING);
   attachInterrupt(digitalPinToInterrupt(encoderPinB), EncoderPinB, RISING);
 
   screenHome = true;
+
   timeoutDuration = EEPROM.read(m_DisplayTimeout);
   socketPort = EEPROM.read(m_UdpPort);
   ip[0] = EEPROM.read(m_IPAddr);
@@ -90,10 +101,10 @@ void setup() {
   ip[2] = EEPROM.read(m_IPAddr + 2);
   ip[3] = EEPROM.read(m_IPAddr + 3);
 
-//  beginNetwork();
+  timeout = timeoutDuration;
+  now = rtc.now();
 
-  lcd.setBacklight(0);
-  lcd.noDisplay();
+  beginNetwork();
 
 }
 
@@ -105,9 +116,22 @@ void loop() {
   }
 
   if (millis() >= nextSecond) {
-    updateHomeScreen();
+    if (timeout > 0) {
+      timeout--;
+      if (timeout == 0) {
+        displayOff();
+      }
+    }
+    if (rtc.now().minute() != now.minute()) {
+      now = rtc.now();
+      updateHomeScreen();
+    } else {
+      now = rtc.now();
+    }
     nextSecond = millis() + 1000;
   }
+
+  checkSocket();
 
 }
 
@@ -135,9 +159,43 @@ void serialEvent() {
 }
 
 boolean pinIsValid(byte pin) {
-  if (pin <= 3) {
+  if (3 >= pin || 10 == pin || 50 <= pin && 52 >= pin || 14 <= pin && 21 >= pin) {
     return false;
   } else {
     return true;
+  }
+}
+
+/**
+   A short pause keeps the dimmer functions running but maintains nothing else.
+   Useful for very short pauses where the full loop could cause too long delays, but the dimmers should be kept running.
+*/
+void shortPause(long duration) {
+  duration = millis() + duration;
+  while (millis() < duration) {
+    if (millis() >= nextDimmerTick) {
+      nextDimmerTick = millis() + 50;
+      runDimmers(false);
+    }
+  }
+}
+
+/**
+   Useful for longer pauses when device functionality needs to be maintained, like when running a UI
+*/
+void longPause(long duration) {
+  duration = millis() + duration;
+  while (millis() < duration) {
+    if (millis() >= nextDimmerTick) {
+      nextDimmerTick = millis() + 50;
+      runDimmers(false);
+    }
+
+    if (millis() >= nextSecond) {
+      updateHomeScreen();
+      nextSecond = millis() + 1000;
+    }
+
+    checkSocket();
   }
 }
