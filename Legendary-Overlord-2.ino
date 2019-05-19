@@ -11,6 +11,7 @@
 #include <EEPROM.h>
 #include <Ethernet.h>
 #include <EthernetUdp.h>
+#include <Keypad.h>
 #include <LiquidCrystal_I2C.h>
 #include <RTClib.h>
 #include <Wire.h>
@@ -27,6 +28,7 @@
 #define m_IPAddr 1
 #define m_DisplayTimeout 5
 
+//Rotary Encoder
 const byte encoderPinA = 2;
 const byte encoderPinB = 3;
 volatile byte aFlag = 0;
@@ -35,29 +37,69 @@ volatile byte encoderPos = 0;
 volatile byte oldEncPos = 0;
 volatile byte reading = 0;
 
+//Keypad
+const byte noRestriction = 100;
+const byte ROWS = 4;
+const byte COLS = 4;
+const char keys[ROWS][COLS] = {
+  {'7', '8', '9', 'A'},
+  {'4', '5', '6', 'B'},
+  {'1', '2', '3', '/'},
+  {'0', '.', '#', '*'}
+};
+const byte rowPins[ROWS] = {22, 23, 24, 25};
+const byte colPins[COLS] = {26, 27, 28, 29};
+Keypad kpd = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+
+//Clock
 RTC_DS3231 rtc;
 const String daysOfTheWeek[7] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 const String daysOfTheWeekShort[7] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 DateTime now;
 
+//Ethernet
 const byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0x91, 0x39};
 byte ip[] = {192, 168, 1, 167};
 byte socketPort = 0;
 byte packetBuffer[UDP_TX_PACKET_MAX_SIZE];
 EthernetUDP socket;
 
+//Misc Data
 byte dataBuffer[50];
 byte replyBuffer[50];
 byte replySize = 0;
 byte serialIndex = 0;
 byte serialLength = 0;
 
+//Display
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 boolean screenHome;
 boolean lcdEnabled = true;
 byte homeMode;
 byte timeoutDuration;
 byte timeout;
+
+byte arrowUp[8] = {
+  B00100,
+  B01110,
+  B11111,
+  B00100,
+  B00100,
+  B00100,
+  B00100,
+  B00100
+};
+
+byte arrowDown[8] = {
+  B00100,
+  B00100,
+  B00100,
+  B00100,
+  B00100,
+  B11111,
+  B01110,
+  B00100
+};
 
 struct Dimmer {
   byte pin;
@@ -79,6 +121,8 @@ void setup() {
   Serial.begin(115200);
 
   lcd.begin(16, 2);
+  lcd.createChar(0, arrowUp);
+  lcd.createChar(1, arrowDown);
   lcd.print("Hello, World!");
   lcd.setCursor(0, 1);
   lcd.print("Init..");
@@ -106,6 +150,8 @@ void setup() {
 
   beginNetwork();
 
+  updateHomeScreen();
+
 }
 
 void loop() {
@@ -131,6 +177,7 @@ void loop() {
     nextSecond = millis() + 1000;
   }
 
+  keypadKeys();
   checkSocket();
 
 }
