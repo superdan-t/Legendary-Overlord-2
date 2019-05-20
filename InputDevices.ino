@@ -25,13 +25,14 @@ void EncoderPinB() {
 }
 
 /**
- * Should run when the device is on the home screen. If it is running elsewhere, the keypresses will cause weird results
- */
+   Should run when the device is on the home screen. If it is running elsewhere, the keypresses will cause weird results
+*/
 void keypadKeys() {
   if (kpd.getKeys()) {
     for (int i = 0; i < LIST_MAX; i++) {
       if (kpd.key[i].stateChanged) {
         timeout = timeoutDuration;
+        updateHomeScreen();
         switch (kpd.key[i].kstate) {
           case PRESSED:
             if (!lcdEnabled) {

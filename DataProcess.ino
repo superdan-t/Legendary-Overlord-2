@@ -186,19 +186,28 @@ void processData(byte *buf, char inType) {
 
   } else if (buf[0] == 7) {
     //Set system variables
-    
+
     if (inType == 'I') {
       //For security, internet sources cannot change properties. Send back a negative acknowledge
       replyBuffer[0] = 21;
       replySize = 1;
       return;
     }
-    
+
     switch (buf[1]) {
       case 0:
         //UDP Server Port
         socketPort = buf[2];
-        EEPROM.update(m_UdpPort, socketPort);
+        byte b = 0;
+        byte c = 0;
+        for (byte i = 0; i < 8; i++) {
+          bitWrite(b, i, bitRead(socketPort, i + 8));
+        }
+        for (byte i = 0; i < 8; i++) {
+          bitWrite(c, i, bitRead(socketPort, i));
+        }
+        EEPROM.update(m_UdpPort, b);
+        EEPROM.update(m_UdpPort + 1, c);
         socket.stop();
         socket.begin(socketPort);
         break;
@@ -232,6 +241,34 @@ void processData(byte *buf, char inType) {
       case 5:
         //System time and date
         rtc.adjust(DateTime(buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]));
+        break;
+    }
+  } else if (buf[0] == 8) {
+    //Get system variables
+    switch (buf[1]) {
+      case 0:
+        replyBuffer[0] = socketPort;
+        replySize = 1;
+        break;
+      case 1:
+        replyBuffer[0] = ip[0];
+        replyBuffer[1] = ip[1];
+        replyBuffer[2] = ip[2];
+        replyBuffer[3] = ip[3];
+        replySize = 4;
+        break;
+      case 2:
+        replyBuffer[0] = timeoutDuration;
+        replySize = 1;
+        break;
+      case 3:
+        replyBuffer[0] = now.year();
+        replyBuffer[1] = now.month();
+        replyBuffer[2] = now.day();
+        replyBuffer[3] = now.hour();
+        replyBuffer[4] = now.minute();
+        replyBuffer[5] = now.second();
+        replySize = 6;
         break;
     }
   }

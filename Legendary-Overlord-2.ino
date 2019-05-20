@@ -25,8 +25,13 @@
 #define d_Method 5
 
 #define m_UdpPort 0
-#define m_IPAddr 1
-#define m_DisplayTimeout 5
+#define m_IPAddr 2
+#define m_DisplayTimeout 6
+
+#define l_scrollUp 1
+#define l_scrollDown 2
+#define l_quit 3
+#define l_save 4
 
 //Rotary Encoder
 const byte encoderPinA = 2;
@@ -60,7 +65,7 @@ DateTime now;
 //Ethernet
 const byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0x91, 0x39};
 byte ip[] = {192, 168, 1, 167};
-byte socketPort = 0;
+unsigned int socketPort = 0;
 byte packetBuffer[UDP_TX_PACKET_MAX_SIZE];
 EthernetUDP socket;
 
@@ -121,8 +126,11 @@ void setup() {
   Serial.begin(115200);
 
   lcd.begin(16, 2);
+  
   lcd.createChar(0, arrowUp);
   lcd.createChar(1, arrowDown);
+  
+  lcd.setCursor(0, 0);
   lcd.print("Hello, World!");
   lcd.setCursor(0, 1);
   lcd.print("Init..");
@@ -137,13 +145,13 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(encoderPinB), EncoderPinB, RISING);
 
   screenHome = true;
-
+  socketPort = 256 * EEPROM.read(m_UdpPort) + EEPROM.read(m_UdpPort + 1);
   timeoutDuration = EEPROM.read(m_DisplayTimeout);
-  socketPort = EEPROM.read(m_UdpPort);
   ip[0] = EEPROM.read(m_IPAddr);
   ip[1] = EEPROM.read(m_IPAddr + 1);
   ip[2] = EEPROM.read(m_IPAddr + 2);
   ip[3] = EEPROM.read(m_IPAddr + 3);
+
 
   timeout = timeoutDuration;
   now = rtc.now();
