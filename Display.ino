@@ -38,6 +38,120 @@ void displayOn() {
 void cmdInterface() {
 
   if (!lcdEnabled) {
+    displayOn();
+  }
+
+  const byte itemCount = 4;
+  const char *menuItems[itemCount] = {"Dimmers", "Date/Time", "Network", "Display"};
+
+  byte selection = lcdSelector(menuItems, itemCount);
+
+  if (selection == 0) {
+
+    return;
+
+  } else if (selection == 1) {
+
+
+
+  } else if (selection == 2) {
+
+    //Date/Time
+    const char *dtmItems[] = {"Year", "Month", "Day", "Hour", "Minute", "Second"};
+    const unsigned int dtmMaxVal[] = {2100, 12, 31, 23, 59, 59};
+    const byte dtmItemsCount = 6;
+
+    unsigned int val = 0;
+
+    byte index = 0;
+
+    boolean sustain = true;
+
+    while (sustain) {
+
+      now = rtc.now();
+
+      switch (index) {
+        case 0:
+          val = now.year();
+          break;
+        case 1:
+          val = now.month();
+          break;
+        case 2:
+          val = now.day();
+          break;
+        case 3:
+          val = now.hour();
+          break;
+        case 4:
+          val = now.minute();
+          break;
+        case 5:
+          val = now.second();
+          break;
+      }
+
+      byte exitState = lcdEditValue(dtmItems[index], &val, 0, dtmMaxVal[index], index == 0 ? 1 : (index == 5 ? 2 : 3));
+
+      switch (exitState) {
+        case l_save:
+
+          now = rtc.now();
+          switch (index) {
+            case 0:
+              rtc.adjust(DateTime(val, now.month(), now.day(), now.hour(), now.minute(), now.second()));
+              break;
+            case 1:
+              rtc.adjust(DateTime(now.year(), val, now.day(), now.hour(), now.minute(), now.second()));
+              break;
+            case 2:
+              rtc.adjust(DateTime(now.year(), now.month(), val, now.hour(), now.minute(), now.second()));
+              break;
+            case 3:
+              rtc.adjust(DateTime(now.year(), now.month(), now.day(), val, now.minute(), now.second()));
+              break;
+            case 4:
+              rtc.adjust(DateTime(now.year(), now.month(), now.day(), now.hour(), val, now.second()));
+              break;
+            case 5:
+              rtc.adjust(DateTime(now.year(), now.month(), now.day(), now.hour(), now.minute(), val));
+              break;
+          }
+          rtc.adjust(now);
+          break;
+
+        case l_scrollUp:
+          index--;
+          break;
+        case l_scrollDown:
+          index++;
+          break;
+        case l_quit:
+          sustain = false;
+
+      }
+
+    }
+
+
+  } else if (selection == 3) {
+
+
+
+  } else if (selection == 4) {
+
+
+
+  }
+
+
+
+}
+
+void cmdInterfaceOld() {
+
+  if (!lcdEnabled) {
     //This should never happen but if it does
     displayOn();
   }
@@ -386,8 +500,6 @@ void cmdInterface() {
         byte index = 0;
         unsigned int val = timeoutDuration;
 
-        reprint = true;
-
         while (sustain) {
 
           if (index == 0) {
@@ -405,6 +517,8 @@ void cmdInterface() {
                 break;
             }
           } else if (index == 1) {
+
+            reprint = true;
 
             while (sustain) {
 
@@ -447,6 +561,7 @@ void cmdInterface() {
           }
 
         }
+
 
       }
     } else if (key == '.') {
