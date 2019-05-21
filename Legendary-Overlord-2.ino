@@ -5,6 +5,7 @@
    LightingControlMaster by Daniel Tierney (https://github.com/RandomShrub)
 
    Thanks to Simon Merrett for interrupt-based rotary encoder setup, who also credits Oleg Mazurov, Nick Gammon, rt, Steve Spence
+   No, the rotary encoder does nothing. Making it do something would be too complicated. If you want it to work, have at it.
 
 */
 
@@ -26,7 +27,8 @@
 
 #define m_UdpPort 0
 #define m_IPAddr 2
-#define m_DisplayTimeout 6
+#define m_DisplayTimeout 7 //Ideally this would be 6 but cell 6 on my board is cranky and stuck on 255
+#define m_TimeFormat 8 //See ↑↑↑
 
 #define l_scrollUp 1
 #define l_scrollDown 2
@@ -80,6 +82,7 @@ byte serialLength = 0;
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 boolean screenHome;
 boolean lcdEnabled = true;
+byte timeFormat;
 byte homeMode;
 byte timeoutDuration;
 byte timeout;
@@ -126,10 +129,10 @@ void setup() {
   Serial.begin(115200);
 
   lcd.begin(16, 2);
-  
+
   lcd.createChar(0, arrowUp);
   lcd.createChar(1, arrowDown);
-  
+
   lcd.setCursor(0, 0);
   lcd.print("Hello, World!");
   lcd.setCursor(0, 1);
@@ -147,6 +150,7 @@ void setup() {
   screenHome = true;
   socketPort = 256 * EEPROM.read(m_UdpPort) + EEPROM.read(m_UdpPort + 1);
   timeoutDuration = EEPROM.read(m_DisplayTimeout);
+  timeFormat = EEPROM.read(m_TimeFormat);
   ip[0] = EEPROM.read(m_IPAddr);
   ip[1] = EEPROM.read(m_IPAddr + 1);
   ip[2] = EEPROM.read(m_IPAddr + 2);
@@ -159,6 +163,38 @@ void setup() {
   beginNetwork();
 
   updateHomeScreen();
+
+//  //TESTING CODE FOR LCD FUNCTION
+//
+//  byte sampleValues[] = {0, 0, 0, 0};
+//  byte index = 0;
+//  byte exitState = 0;
+//  boolean sustain = true;
+//
+//  while (sustain) {
+//
+//    char *label = "Sample  ";
+//    label[7] = index + 48;
+//
+//    unsigned int value = sampleValues[index];
+//
+//    exitState = lcdEditValue(label, &value, 0, 255, index == 0 ? 1 : (index == 3 ? 2 : 3));
+//
+//    if (exitState == l_save) {
+//      sampleValues[index] = value;
+//      Serial.print("Saving sample value to memory: ");
+//      Serial.println(sampleValues[index]);
+//    } else if (exitState == l_scrollUp) {
+//      index--;
+//    } else if (exitState == l_scrollDown) {
+//      index++;
+//    } else if (exitState == l_quit) {
+//      Serial.println("am quit");
+//      sustain = false;
+//    }
+//
+//  }
+
 
 }
 

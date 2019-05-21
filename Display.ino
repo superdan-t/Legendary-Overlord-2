@@ -102,10 +102,81 @@ void cmdInterface() {
 
       } else if (index == 1) {
         //Date/Time
+        const char *dtmItems[] = {"Year", "Month", "Day", "Hour", "Minute", "Second"};
+        const unsigned int dtmMaxVal[] = {2100, 12, 31, 23, 59, 59};
+        const byte dtmItemsCount = 6;
+
+        unsigned int val = 0;
+
+        byte index = 0;
+
+        while (sustain) {
+
+          switch (index) {
+            case 0:
+              val = rtc.now().year();
+              break;
+            case 1:
+              val = rtc.now().month();
+              break;
+            case 2:
+              val = rtc.now().day();
+              break;
+            case 3:
+              val = rtc.now().hour();
+              break;
+            case 4:
+              val = rtc.now().minute();
+              break;
+            case 5:
+              val = rtc.now().second();
+              break;
+          }
+
+          byte exitState = lcdEditValue(dtmItems[index], &val, 0, dtmMaxVal[index], index == 0 ? 1 : (index == 5 ? 2 : 3));
+
+          switch (exitState) {
+            case l_save:
+
+              now = rtc.now();
+              switch (index) {
+                case 0:
+                  rtc.adjust(DateTime(val, now.month(), now.day(), now.hour(), now.minute(), now.second()));
+                  break;
+                case 1:
+                  rtc.adjust(DateTime(now.year(), val, now.day(), now.hour(), now.minute(), now.second()));
+                  break;
+                case 2:
+                  rtc.adjust(DateTime(now.year(), now.month(), val, now.hour(), now.minute(), now.second()));
+                  break;
+                case 3:
+                  rtc.adjust(DateTime(now.year(), now.month(), now.day(), val, now.minute(), now.second()));
+                  break;
+                case 4:
+                  rtc.adjust(DateTime(now.year(), now.month(), now.day(), now.hour(), val, now.second()));
+                  break;
+                case 5:
+                  rtc.adjust(DateTime(now.year(), now.month(), now.day(), now.hour(), now.minute(), val));
+                  break;
+              }
+              break;
+
+            case l_scrollUp:
+              index--;
+              break;
+            case l_scrollDown:
+              index++;
+              break;
+            case l_quit:
+              sustain = false;
+
+          }
+
+        }
 
       } else if (index == 2) {
 
-        //Network
+        //Network. Lots of duplicate code here because of IP address editing
 
 
         reprint = true;
@@ -310,7 +381,72 @@ void cmdInterface() {
 
 
       } else if (index == 3) {
+
         //Display
+        byte index = 0;
+        unsigned int val = timeoutDuration;
+
+        reprint = true;
+
+        while (sustain) {
+
+          if (index == 0) {
+            byte exitState = lcdEditValue("Timeout", &val, 10, 255, 1);
+            switch (exitState) {
+              case l_scrollDown:
+                index++;
+                break;
+              case l_save:
+                timeoutDuration = val;
+                EEPROM.update(m_DisplayTimeout, timeoutDuration);
+                break;
+              case l_quit:
+                sustain = false;
+                break;
+            }
+          } else if (index == 1) {
+
+            while (sustain) {
+
+              if (reprint) {
+                lcd.clear();
+                lcd.print("Time Format:");
+                lcd.setCursor(15, 0);
+                lcd.print(char(0));
+                lcd.setCursor(0, 1);
+                lcd.print(timeFormat == 0 ? "12-hour" : "24-hour");
+                reprint = false;
+              }
+
+
+              char key = keyPressed(RELEASED);
+
+              if (key == 'A') {
+                index--;
+                sustain = false;
+              } else if (key  == '.') {
+                sustain = false;
+              } else if (key == '#') {
+
+                const String opt[] = {"12-hour", "24-hour"};
+
+                byte selection = lcdSelector(opt, 2);
+
+                if (selection != 0) {
+                  timeFormat = selection - 1;
+                  EEPROM.update(m_TimeFormat, timeFormat);
+                  reprint = true;
+                } else {
+                  sustain = false;
+                }
+              }
+            }
+
+            sustain = true;
+
+          }
+
+        }
 
       }
     } else if (key == '.') {
@@ -336,14 +472,14 @@ void cmdInterface() {
    arrows: 0 - none, 1 - down, 2 - up, 3 - up and down
    Returns an end state indicator:
 */
-byte lcdEditValue(char *valName, uint16_t &value, uint16_t minValue, uint16_t maxValue, byte arrows) {
+byte lcdEditValue(char *valName, unsigned int *value, unsigned int minValue, unsigned int maxValue, byte arrows) {
 
   boolean reprint = true;
   boolean editing = false;
   byte pos = 0;
   byte maxPos = String(maxValue).length() - 1;
   static byte enterState;
-  String valStr = String(value); //It is needed as string, but this way, we can keep the initial value too
+  String valStr = String(*value); //It is needed as string, but this way, we can keep the initial value too
 
   timeout = timeoutDuration;
 
@@ -400,8 +536,9 @@ byte lcdEditValue(char *valName, uint16_t &value, uint16_t minValue, uint16_t ma
       editing = !editing;
       reprint = true;
       if (!editing) {
-        if (valStr.toInt() > maxValue) value = maxValue;
-        else value = valStr.toInt();
+        if (valStr.toInt() > maxValue) *value = maxValue;
+        else if (valStr.toInt() < minValue) *value = minValue;
+        else *value = valStr.toInt();
         return l_save;
       }
 
@@ -410,8 +547,9 @@ byte lcdEditValue(char *valName, uint16_t &value, uint16_t minValue, uint16_t ma
       if (editing) {
         if (lcdConfirm("Save?")) {
           enterState = l_scrollUp;
-          if (valStr.toInt() > maxValue) value = maxValue;
-          else value = valStr.toInt();
+          if (valStr.toInt() > maxValue) *value = maxValue;
+          else if (valStr.toInt() < minValue) *value = minValue;
+          else *value = valStr.toInt();
           return l_save;
         }
       }
@@ -423,8 +561,9 @@ byte lcdEditValue(char *valName, uint16_t &value, uint16_t minValue, uint16_t ma
       if (editing) {
         if (lcdConfirm("Save?")) {
           enterState = l_scrollDown;
-          if (valStr.toInt() > maxValue) value = maxValue;
-          else value = valStr.toInt();
+          if (valStr.toInt() > maxValue) *value = maxValue;
+          else if (valStr.toInt() < minValue) *value = minValue;
+          else *value = valStr.toInt();
           return l_save;
         }
       }
@@ -435,6 +574,8 @@ byte lcdEditValue(char *valName, uint16_t &value, uint16_t minValue, uint16_t ma
 
       if (editing) {
 
+        reprint = true;
+
         pos++;
 
         if (pos > maxPos) pos = 0;
@@ -444,6 +585,7 @@ byte lcdEditValue(char *valName, uint16_t &value, uint16_t minValue, uint16_t ma
     } else if (key == '.') {
 
       if (editing) {
+        reprint = true;
         if (valStr.length() != 0) valStr.remove(pos, 1);
         if (pos == valStr.length()) pos--;
       } else {
@@ -454,7 +596,13 @@ byte lcdEditValue(char *valName, uint16_t &value, uint16_t minValue, uint16_t ma
 
       if (editing) {
 
-        if (valStr.length() > pos) valStr[pos] = key;
+        reprint = true;
+
+        if (valStr.length() == 0) {
+          valStr += key;
+          pos++;
+        }
+        else if (valStr.length() > pos) valStr[pos] = key;
         else valStr += key;
 
         pos++;
@@ -471,6 +619,81 @@ byte lcdEditValue(char *valName, uint16_t &value, uint16_t minValue, uint16_t ma
 
 
   }
+
+  return l_quit;
+
+}
+
+/**
+   Makes a menu out of items.
+   Returns selection + 1!!! This is so that 0 can be returned if the user exits the menu.
+*/
+byte lcdSelector(String *items, byte itemCount) {
+
+  byte index = 0;
+  boolean reprint = true;
+
+  timeout = timeoutDuration;
+
+  while (timeout > 0) {
+
+    if (reprint) {
+
+      lcd.clear();
+      lcd.print('>');
+      lcd.print(items[index]);
+
+      if (index != 0) {
+        //Show up arrow if it isn't the first item
+        lcd.setCursor(15, 0);
+        lcd.print(char(0));
+      }
+
+      if (index != itemCount - 1) {
+        //Show down arrow and next item if it isn't the last item
+        lcd.setCursor(15, 1);
+        lcd.print(char(1));
+
+        lcd.setCursor(0, 1);
+        lcd.print(items[index + 1]);
+      }
+
+      reprint = false;
+
+
+    }
+
+    char key = keyPressed(RELEASED);
+
+    switch (key) {
+      case '.':
+        return 0;
+      case 'A':
+        if (index != 0) {
+          index--;
+          reprint = true;
+        }
+        break;
+      case 'B':
+        if (index != itemCount - 1) {
+          index++;
+          reprint = true;
+        }
+        break;
+      case '#':
+        return index + 1;
+    }
+
+    if (millis() >= nextSecond) {
+      nextSecond = millis() + 1000;
+      timeout--;
+    }
+
+  }
+
+
+  return 0;
+
 
 }
 

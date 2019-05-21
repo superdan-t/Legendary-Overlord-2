@@ -188,61 +188,62 @@ void processData(byte *buf, char inType) {
     //Set system variables
 
     if (inType == 'I') {
-      //For security, internet sources cannot change properties. Send back a negative acknowledge
       replyBuffer[0] = 21;
       replySize = 1;
       return;
     }
 
-    switch (buf[1]) {
-      case 0:
-        //UDP Server Port
-        socketPort = buf[2];
-        byte b = 0;
-        byte c = 0;
-        for (byte i = 0; i < 8; i++) {
-          bitWrite(b, i, bitRead(socketPort, i + 8));
-        }
-        for (byte i = 0; i < 8; i++) {
-          bitWrite(c, i, bitRead(socketPort, i));
-        }
-        EEPROM.update(m_UdpPort, b);
-        EEPROM.update(m_UdpPort + 1, c);
-        socket.stop();
-        socket.begin(socketPort);
-        break;
-      case 1:
-        //IP Address
-        ip[0] = buf[2];
-        ip[1] = buf[3];
-        ip[2] = buf[4];
-        ip[3] = buf[5];
-        EEPROM.update(m_IPAddr, ip[0]);
-        EEPROM.update(m_IPAddr + 1, ip[1]);
-        EEPROM.update(m_IPAddr + 2, ip[2]);
-        EEPROM.update(m_IPAddr + 3, ip[3]);
-        Ethernet.setLocalIP(IPAddress(ip[0], ip[1], ip[2], ip[3]));
-        break;
-      case 2:
-        //LCD Timeout
-        timeoutDuration = buf[2];
-        EEPROM.update(m_DisplayTimeout, timeoutDuration);
-        break;
-      case 3:
-        //System time
-        now = rtc.now();
-        rtc.adjust(DateTime(now.year(), now.month(), now.day(), buf[2], buf[3], buf[4]));
-        break;
-      case 4:
-        //System date
-        now = rtc.now();
-        rtc.adjust(DateTime(buf[2], buf[3], buf[4], now.hour(), now.minute(), now.second()));
-        break;
-      case 5:
-        //System time and date
-        rtc.adjust(DateTime(buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]));
-        break;
+    if (buf[1] == 0) {
+
+      //UDP Server Port
+      socketPort = buf[2];
+      byte b = 0;
+      byte c = 0;
+      for (byte i = 0; i < 8; i++) {
+        bitWrite(b, i, bitRead(socketPort, i + 8));
+      }
+      for (byte i = 0; i < 8; i++) {
+        bitWrite(c, i, bitRead(socketPort, i));
+      }
+      EEPROM.update(m_UdpPort, b);
+      EEPROM.update(m_UdpPort + 1, c);
+      socket.stop();
+      socket.begin(socketPort);
+
+    } else if (buf[1] == 1) {
+
+      //IP Address
+      ip[0] = buf[2];
+      ip[1] = buf[3];
+      ip[2] = buf[4];
+      ip[3] = buf[5];
+      EEPROM.update(m_IPAddr, ip[0]);
+      EEPROM.update(m_IPAddr + 1, ip[1]);
+      EEPROM.update(m_IPAddr + 2, ip[2]);
+      EEPROM.update(m_IPAddr + 3, ip[3]);
+      Ethernet.setLocalIP(IPAddress(ip[0], ip[1], ip[2], ip[3]));
+    } else if (buf[1] == 2) {
+
+      //LCD Timeout
+      timeoutDuration = buf[2];
+      EEPROM.update(m_DisplayTimeout, timeoutDuration);
+
+    } else if (buf[1] == 3) {
+
+      //System time
+      now = rtc.now();
+      rtc.adjust(DateTime(now.year(), now.month(), now.day(), buf[2], buf[3], buf[4]));
+
+    } else if (buf[1] == 4) {
+      //System date
+      now = rtc.now();
+      rtc.adjust(DateTime(buf[2] + 2000, buf[3], buf[4], now.hour(), now.minute(), now.second()));
+
+    } else if (buf[1] == 5) {
+      //System time and date
+      rtc.adjust(DateTime(buf[2] + 2000, buf[3], buf[4], buf[5], buf[6], buf[7]));
     }
+
   } else if (buf[0] == 8) {
     //Get system variables
     switch (buf[1]) {
