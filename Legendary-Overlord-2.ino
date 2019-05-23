@@ -29,6 +29,7 @@
 #define m_IPAddr 2
 #define m_DisplayTimeout 7 //Ideally this would be 6 but cell 6 on my board is cranky and stuck on 255
 #define m_TimeFormat 8 //See ↑↑↑
+#define m_I2CDisplay 9
 
 #define l_scrollUp 1
 #define l_scrollDown 2
@@ -86,6 +87,7 @@ byte timeFormat;
 byte homeMode;
 byte timeoutDuration;
 byte timeout;
+byte i2cDisplay;
 
 byte arrowUp[8] = {
   B00100,
@@ -140,6 +142,8 @@ void setup() {
 
   initDimmers(true);
 
+  Wire.begin();
+
   rtc.begin();
 
   pinMode(encoderPinA, INPUT_PULLUP);
@@ -151,6 +155,7 @@ void setup() {
   socketPort = 256 * EEPROM.read(m_UdpPort) + EEPROM.read(m_UdpPort + 1);
   timeoutDuration = EEPROM.read(m_DisplayTimeout);
   timeFormat = EEPROM.read(m_TimeFormat);
+  i2cDisplay = EEPROM.read(m_I2CDisplay);
   ip[0] = EEPROM.read(m_IPAddr);
   ip[1] = EEPROM.read(m_IPAddr + 1);
   ip[2] = EEPROM.read(m_IPAddr + 2);
@@ -164,38 +169,6 @@ void setup() {
 
   updateHomeScreen();
 
-//  //TESTING CODE FOR LCD FUNCTION
-//
-//  byte sampleValues[] = {0, 0, 0, 0};
-//  byte index = 0;
-//  byte exitState = 0;
-//  boolean sustain = true;
-//
-//  while (sustain) {
-//
-//    char *label = "Sample  ";
-//    label[7] = index + 48;
-//
-//    unsigned int value = sampleValues[index];
-//
-//    exitState = lcdEditValue(label, &value, 0, 255, index == 0 ? 1 : (index == 3 ? 2 : 3));
-//
-//    if (exitState == l_save) {
-//      sampleValues[index] = value;
-//      Serial.print("Saving sample value to memory: ");
-//      Serial.println(sampleValues[index]);
-//    } else if (exitState == l_scrollUp) {
-//      index--;
-//    } else if (exitState == l_scrollDown) {
-//      index++;
-//    } else if (exitState == l_quit) {
-//      Serial.println("am quit");
-//      sustain = false;
-//    }
-//
-//  }
-
-
 }
 
 void loop() {
@@ -205,6 +178,8 @@ void loop() {
     runDimmers(false);
   }
 
+
+  //Run every second
   if (millis() >= nextSecond) {
     if (timeout > 0) {
       timeout--;
@@ -212,12 +187,31 @@ void loop() {
         displayOff();
       }
     }
+
+    //Has the time changed?
     if (rtc.now().minute() != now.minute()) {
       now = rtc.now();
       updateHomeScreen();
+
+      
+      //Update the 4 x 7seg remote display, if it exists
+      if (i2cDisplay != 0) {
+
+        Wire.beginTransmission(i2cDisplay);
+        Wire.write(6); //Command byte exclusive to I2C display
+        Wire.write(0); //Subcommand for I2C display to recognize it is receiving the time
+        Wire.write(timeFormat); //Tell it how to display
+        Wire.write(now.hour());
+        Wire.write(now.minute());
+        Wire.endTransmission(); //No reply is expected
+        
+      }
+
+      
     } else {
       now = rtc.now();
     }
+    
     nextSecond = millis() + 1000;
   }
 

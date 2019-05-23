@@ -106,25 +106,25 @@ void processData(byte *buf, char inType) {
     }
 
   } else if (buf[0] == 4) {
-    /*
-       Forward the message to a connected device.
-       Order:
-       (4 - forward) (fwd type - 0 Serial, 1 Serial1, 2 Serial2, 3 Serial3, 4 I2C) (addr - I2C ONLY) (message length) [message...]
-    */
-    switch (buf[1]) {
-      case 0:
-        Serial.write(buf[2]); //Serial transmissions always begin with the length. No address because only 1 device per UART.
-        for (byte i = 0; i < buf[2]; i++) {
-          Serial.write(buf[i + 3]);
-        }
-      //The other serial ports have not been implemented elsewhere, so they would do nothing here.
-      case 4:
-        Wire.beginTransmission(buf[2]); //Begin I2C transmission to the provided address. Length doesn't have to be sent, but is used.
-        for (byte i = 0; i < buf[3]; i++) {
-          Wire.write(buf[i + 4]);
-        }
-        Wire.endTransmission();
-    }
+    //    /*
+    //       Forward the message to a connected device.
+    //       Order:
+    //       (4 - forward) (fwd type - 0 Serial, 1 Serial1, 2 Serial2, 3 Serial3, 4 I2C) (addr - I2C ONLY) (message length) [message...]
+    //    */
+    //    switch (buf[1]) {
+    //      case 0:
+    //        Serial.write(buf[2]); //Serial transmissions always begin with the length. No address because only 1 device per UART.
+    //        for (byte i = 0; i < buf[2]; i++) {
+    //          Serial.write(buf[i + 3]);
+    //        }
+    //      //The other serial ports have not been implemented elsewhere, so they would do nothing here.
+    //      case 4:
+    //        Wire.beginTransmission(buf[2]); //Begin I2C transmission to the provided address. Length doesn't have to be sent, but is used.
+    //        for (byte i = 0; i < buf[3]; i++) {
+    //          Wire.write(buf[i + 4]);
+    //        }
+    //        Wire.endTransmission();
+    //    }
   } else if (buf[0] == 5) {
     //  FORWARDING HAS BEEN DISABLED DUE TO POSSIBLE EXPLOITATION
     //    /*
@@ -183,6 +183,10 @@ void processData(byte *buf, char inType) {
     //        }
     //
     //    }
+
+  } else if (buf[0] == 6) {
+
+    //RESERVED FOR OTHER DEVICES. HAS NO EFFECT ON MASTER DEVICE
 
   } else if (buf[0] == 7) {
     //Set system variables
