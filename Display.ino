@@ -71,7 +71,116 @@ void cmdInterface() {
 
   } else if (selection == 1) {
 
+    //Dimmers
 
+    //First, find the dimmer to edit
+    const byte dtCount = 2;
+    const String dtItems[dtCount] = {"Local", "Remote"};
+
+    byte targetDimmer = 0; //The index of the targeted dimmer, local or remote
+
+    byte targetAddress = 0; //The I2C addr of the remote device if remote is selected
+
+    Dimmer remoteDimmer; //Will be used as a temporary dimmer in the event that the selection is remote
+
+    byte editType = lcdSelector(dtItems, dtCount); //Select between local or remote
+
+    if (editType == 0) return;
+
+    unsigned int temp = 0; //Will be used all throughout as a carrier to send non-integer data through the lcdEditValue function
+
+    //The target dimmer has to be selected either way
+    if (lcdEditValue("Dimmer", &temp, 0, 50, 0) == l_quit) {
+      return;
+    } else {
+      targetDimmer = temp;
+    }
+
+    //If local, nothing needs to be done here
+
+    if (editType == 2) {
+
+      temp = 0;
+
+      if (lcdEditValue("Remote Addr", &temp, 0, 127, 0) == l_quit) {
+        return;
+      } else {
+        targetAddress = temp;
+      }
+
+      /*
+         The necessary functions to support this procedure have not been implemented yet. The target device will be contacted to return
+         dimmer values for the selection. They will be loaded into the "remoteDimmer"
+      */
+
+    }
+
+    const byte itemCount = 5;
+    const String dmItems[itemCount] = {"Method", "Pin", "Enabled", "Bipolar", "Inverse"};
+
+    boolean sustain = true;
+
+    while (sustain) {
+
+
+      byte selection = lcdSelector(dmItems, itemCount);
+
+      if (selection == 0) {
+
+        sustain = false;
+
+      } else if (selection == 1 || selection == 2) {
+
+        temp = getDimmerProperty(editType == 1 ? &dimmers[targetDimmer] : &remoteDimmer, selection == 1 ? d_Method : d_Pin); //The initial value that needs editing
+
+        while (sustain == true) {
+
+          //Launch a value editor for method or pin. Second ternary determines max value (15 for Method or 255 for Pin), while the third determines arrow state (down only for Method, both for Pin)
+          byte exitState = lcdEditValue(selection == 1 ? "Method" : "Pin", &temp, 0, selection == 1 ? 15 : 255, selection == 1 ? 1 : 3);
+
+          switch (exitState) {
+
+            case l_save:
+              setDimmerProperty(editType == 1 ? &dimmers[targetDimmer] : &remoteDimmer, selection == 1 ? d_Method : d_Pin, temp);
+              if (editType == 1) {
+                bindAll();
+
+              } else {
+
+                //setRemoteDimmerProperty(targetAddress, targetDimmer, selection == 1 ? d_Method : d_Pin, temp); //ANTICIPATED FUNCTION
+
+              }
+              break;
+
+            case l_quit:
+              sustain = false;
+              break;
+
+          }
+
+        }
+
+        sustain = true; //Set it back to true so the previous menu will show again
+
+      } else {
+
+        boolean prop = getDimmerProperty(editType == 1 ? &dimmers[targetDimmer] : &remoteDimmer, selection - 2);
+
+        lcdEditBoolean(selection == 3 ? "Enabled" : (selection == 4 ? "Bipolar" : "Inverse"), &prop);
+
+        setDimmerProperty(editType == 1 ? &dimmers[targetDimmer] : &remoteDimmer, selection - 2, prop);
+
+        if (editType == 1) {
+          bindAll();
+        } else {
+          //setRemoteDimmerProperty(targetAddress, targetDimmer, selection - 2, prop); //ANTICIPATED FUNCTION
+        }
+        
+      }
+
+
+
+    }
 
   } else if (selection == 2) {
 
@@ -369,7 +478,7 @@ void cmdInterface() {
       if (index == 0) {
 
         val = timeoutDuration;
-        
+
         byte exitState = lcdEditValue("Timeout", &val, 10, 255, 1);
         switch (exitState) {
           case l_scrollDown:
@@ -388,7 +497,7 @@ void cmdInterface() {
         val = i2cDisplay;
 
         byte exitState = lcdEditValue("I2C Disp Addr", &val, 10, 255, 3);
-        
+
         switch (exitState) {
           case l_scrollUp:
             index--;
@@ -457,438 +566,6 @@ void cmdInterface() {
 
 }
 
-//Remove this eventually. Update to support new LCD functions like lcdSelector and lcdEditValue
-//void cmdInterfaceOld() {
-//
-//  if (!lcdEnabled) {
-//    //This should never happen but if it does
-//    displayOn();
-//  }
-//
-//  timeout = timeoutDuration;
-//
-//  boolean sustain = true;
-//  boolean reprint = true;
-//  byte index = 0;
-//
-//  const byte itemCount = 4;
-//  const char *menuItems[itemCount] = {"Dimmers", "Date/Time", "Network", "Display"};
-//
-//
-//  while (sustain && timeout > 0) {
-//
-//    if (reprint) {
-//      //Indicates that some display element has changed and needs to be printed
-//
-//      lcd.clear();
-//      lcd.print('>');
-//      lcd.print(menuItems[index]);
-//
-//      if (index != 0) {
-//        //Show up arrow if it isn't the first item
-//        lcd.setCursor(15, 0);
-//        lcd.print(char(0));
-//      }
-//
-//      if (index != itemCount - 1) {
-//        //Show down arrow and next item if it isn't the last item
-//        lcd.setCursor(15, 1);
-//        lcd.print(char(1));
-//
-//        lcd.setCursor(0, 1);
-//        lcd.print(menuItems[index + 1]);
-//      }
-//
-//      reprint = false;
-//
-//    }
-//
-//    char key = keyPressed(RELEASED);
-//
-//    if (key != ' ') {
-//      timeout = timeoutDuration;
-//    }
-//
-//    if (key == 'A') {
-//      if (index != 0) {
-//        index--;
-//        reprint = true;
-//      }
-//    } else if (key == 'B') {
-//      if (index != itemCount - 1) {
-//        index++;
-//        reprint = true;
-//      }
-//    } else if (key == '#') {
-//      if (index == 0) {
-//        //Dimmers
-//
-//      } else if (index == 1) {
-//        //Date/Time **UPDATED SUCCESSFULLY**
-//        const char *dtmItems[] = {"Year", "Month", "Day", "Hour", "Minute", "Second"};
-//        const unsigned int dtmMaxVal[] = {2100, 12, 31, 23, 59, 59};
-//        const byte dtmItemsCount = 6;
-//
-//        unsigned int val = 0;
-//
-//        byte index = 0;
-//
-//        while (sustain) {
-//
-//          switch (index) {
-//            case 0:
-//              val = rtc.now().year();
-//              break;
-//            case 1:
-//              val = rtc.now().month();
-//              break;
-//            case 2:
-//              val = rtc.now().day();
-//              break;
-//            case 3:
-//              val = rtc.now().hour();
-//              break;
-//            case 4:
-//              val = rtc.now().minute();
-//              break;
-//            case 5:
-//              val = rtc.now().second();
-//              break;
-//          }
-//
-//          byte exitState = lcdEditValue(dtmItems[index], &val, 0, dtmMaxVal[index], index == 0 ? 1 : (index == 5 ? 2 : 3));
-//
-//          switch (exitState) {
-//            case l_save:
-//
-//              now = rtc.now();
-//              switch (index) {
-//                case 0:
-//                  rtc.adjust(DateTime(val, now.month(), now.day(), now.hour(), now.minute(), now.second()));
-//                  break;
-//                case 1:
-//                  rtc.adjust(DateTime(now.year(), val, now.day(), now.hour(), now.minute(), now.second()));
-//                  break;
-//                case 2:
-//                  rtc.adjust(DateTime(now.year(), now.month(), val, now.hour(), now.minute(), now.second()));
-//                  break;
-//                case 3:
-//                  rtc.adjust(DateTime(now.year(), now.month(), now.day(), val, now.minute(), now.second()));
-//                  break;
-//                case 4:
-//                  rtc.adjust(DateTime(now.year(), now.month(), now.day(), now.hour(), val, now.second()));
-//                  break;
-//                case 5:
-//                  rtc.adjust(DateTime(now.year(), now.month(), now.day(), now.hour(), now.minute(), val));
-//                  break;
-//              }
-//              break;
-//
-//            case l_scrollUp:
-//              index--;
-//              break;
-//            case l_scrollDown:
-//              index++;
-//              break;
-//            case l_quit:
-//              sustain = false;
-//
-//          }
-//
-//        }
-//
-//      } else if (index == 2) {
-//
-//        //Network. Lots of duplicate code here because of IP address editing
-//
-//
-//        reprint = true;
-//        index = 0;
-//        byte segSel = 0;
-//        byte segPos = 0;
-//        byte toSave = 0;
-//        boolean edit = false;
-//        boolean saveNext = false;
-//        boolean saved = true;
-//        String ipStr[4] = {String(ip[0]), String(ip[1]), String(ip[2]), String(ip[3])};
-//        String portStr = String(socketPort);
-//        const byte nItemCount = 2;
-//        const char *nMenuItems[] = {"IP Address:", "UDP Port:"};
-//
-//        while (sustain && timeout > 0) {
-//
-//          key = keyPressed(RELEASED);
-//
-//          if (reprint) {
-//
-//            lcd.clear();
-//            lcd.noCursor();
-//            lcd.noBlink();
-//            lcd.print(nMenuItems[index]);
-//
-//            if (index != 0) {
-//              lcd.setCursor(15, 0);
-//              lcd.print(char(0));
-//            }
-//
-//            if (index != nItemCount - 1) {
-//              lcd.setCursor(15, 1);
-//              lcd.print(char(1));
-//            }
-//
-//            if (index == 0) {
-//              lcd.setCursor(0, 1);
-//              lcd.print(ipStr[0] + '.' + ipStr[1] + '.' + ipStr[2] + '.' + ipStr[3]);
-//
-//
-//              if (edit) {
-//                byte offset = 0;
-//                if (segSel == 1) offset = ipStr[0].length();
-//                else if (segSel == 2) offset = ipStr[0].length() + ipStr[1].length();
-//                else if (segSel == 3) offset = ipStr[0].length() + ipStr[1].length() + ipStr[2].length();
-//
-//                lcd.setCursor(segSel + segPos + offset, 1);
-//                lcd.cursor();
-//                lcd.blink();
-//              }
-//            } else if (index == 1) {
-//              lcd.setCursor(0, 1);
-//              lcd.print(portStr);
-//
-//              if (edit) {
-//                lcd.setCursor(segPos, 1);
-//                lcd.cursor();
-//                lcd.blink();
-//              }
-//
-//            }
-//
-//            reprint = false;
-//
-//          }
-//
-//          //Network keypress handler
-//          if (key == '*' || key == '#' && !edit) {
-//            edit = !edit;
-//            reprint = true;
-//            toSave = index;
-//            saveNext = true;
-//          } else if (key == 'A') {
-//            edit = false;
-//            segPos = 0;
-//            if (!saved) {
-//              if (lcdConfirm("Save changes?")) {
-//                toSave = index;
-//                saveNext = true;
-//              } else {
-//                saved = true;
-//              }
-//            }
-//            if (index != 0) {
-//              index--;
-//              reprint = true;
-//            }
-//          } else if (key == 'B') {
-//            edit = false;
-//            segPos = 0;
-//            if (!saved) {
-//              if (lcdConfirm("Save changes?")) {
-//                toSave = index;
-//                saveNext = true;
-//              } else {
-//                saved = true;
-//              }
-//            }
-//            if (index != itemCount - 1) {
-//              index++;
-//              reprint = true;
-//            }
-//          } else if (key == '#') {
-//            if (edit) {
-//              reprint = true;
-//              if (index == 0) {
-//
-//                if (ipStr[segSel].toInt() > 255) ipStr[segSel] = "255";
-//                else if (ipStr[segSel].length() == 0) ipStr[segSel] = "0";
-//
-//                segSel++;
-//                if (segSel >= 4) segSel = 0;
-//
-//              }
-//            }
-//          } else if (key == '.') {
-//            if (edit) {
-//              saved = false;
-//              reprint = true;
-//              if (index == 0) {
-//                ipStr[segSel].remove(segPos, 1);
-//                if (segPos == ipStr[segSel].length()) segPos--;
-//              } else if (index == 1) {
-//                portStr.remove(segPos, 1);
-//                if (segPos == portStr.length()) segPos--;
-//              }
-//            } else {
-//              sustain = false;
-//            }
-//          } else if (isDigit(key)) {
-//            if (edit) {
-//              saved = false;
-//              reprint = true;
-//
-//              if (index == 0) {
-//
-//                if (ipStr[segSel].length() > segPos) ipStr[segSel][segPos] = key;
-//                else ipStr[segSel] += key;
-//
-//                segPos++;
-//                if (segPos == 3) segPos = 0;
-//
-//              } else if (index == 1) {
-//
-//                if (portStr.length() > segPos) portStr[segPos] = key;
-//                else portStr += key;
-//
-//                segPos++;
-//                if (segPos == 5) segPos = 0;
-//
-//                if (portStr.toInt() > 65565) portStr = "65565";
-//
-//              }
-//            }
-//          }
-//
-//          if (saveNext) {
-//            if (toSave == 0) {
-//
-//              if (ipStr[segSel].toInt() > 255) ipStr[segSel] = "255";
-//              else if (ipStr[segSel].length() == 0) ipStr[segSel] = "0";
-//
-//              ip[0] = ipStr[0].toInt();
-//              ip[1] = ipStr[1].toInt();
-//              ip[2] = ipStr[2].toInt();
-//              ip[3] = ipStr[3].toInt();
-//              EEPROM.update(m_IPAddr, ip[0]);
-//              EEPROM.update(m_IPAddr + 1, ip[1]);
-//              EEPROM.update(m_IPAddr + 2, ip[2]);
-//              EEPROM.update(m_IPAddr + 3, ip[3]);
-//              Ethernet.setLocalIP(IPAddress(ip[0], ip[1], ip[2], ip[3]));
-//              saved = true;
-//            } else if (toSave == 1) {
-//              socketPort = portStr.toInt();
-//              byte b = 0;
-//              byte c = 0;
-//              for (byte i = 0; i < 8; i++) {
-//                bitWrite(b, i, bitRead(socketPort, i + 8));
-//              }
-//              for (byte i = 0; i < 8; i++) {
-//                bitWrite(c, i, bitRead(socketPort, i));
-//              }
-//              EEPROM.update(m_UdpPort, b);
-//              EEPROM.update(m_UdpPort + 1, c);
-//              socket.stop();
-//              socket.begin(socketPort);
-//              saved = true;
-//            }
-//            saveNext = false;
-//          }
-//
-//
-//          if (millis() >= nextSecond) {
-//            nextSecond = millis() + 1000;
-//            timeout--;
-//          }
-//
-//
-//        }
-//
-//
-//
-//      } else if (index == 3) {
-//
-//        //Display
-//        byte index = 0;
-//        unsigned int val = timeoutDuration;
-//
-//        while (sustain) {
-//
-//          if (index == 0) {
-//            byte exitState = lcdEditValue("Timeout", &val, 10, 255, 1);
-//            switch (exitState) {
-//              case l_scrollDown:
-//                index++;
-//                break;
-//              case l_save:
-//                timeoutDuration = val;
-//                EEPROM.update(m_DisplayTimeout, timeoutDuration);
-//                break;
-//              case l_quit:
-//                sustain = false;
-//                break;
-//            }
-//          } else if (index == 1) {
-//
-//            reprint = true;
-//
-//            while (sustain) {
-//
-//              if (reprint) {
-//                lcd.clear();
-//                lcd.print("Time Format:");
-//                lcd.setCursor(15, 0);
-//                lcd.print(char(0));
-//                lcd.setCursor(0, 1);
-//                lcd.print(timeFormat == 0 ? "12-hour" : "24-hour");
-//                reprint = false;
-//              }
-//
-//
-//              char key = keyPressed(RELEASED);
-//
-//              if (key == 'A') {
-//                index--;
-//                sustain = false;
-//              } else if (key  == '.') {
-//                sustain = false;
-//              } else if (key == '#') {
-//
-//                const String opt[] = {"12-hour", "24-hour"};
-//
-//                byte selection = lcdSelector(opt, 2);
-//
-//                if (selection != 0) {
-//                  timeFormat = selection - 1;
-//                  EEPROM.update(m_TimeFormat, timeFormat);
-//                  reprint = true;
-//                } else {
-//                  sustain = false;
-//                }
-//              }
-//            }
-//
-//            sustain = true;
-//
-//          }
-//
-//        }
-//
-//
-//      }
-//    } else if (key == '.') {
-//      sustain = false;
-//    }
-//
-//    if (millis() >= nextSecond) {
-//      nextSecond = millis() + 1000;
-//      timeout--;
-//    }
-//
-//
-//  }
-//
-//  timeout = timeoutDuration;
-//
-//}
-
 /**
    An LCD prompt for changing a variable.
    valName is displayed at the top
@@ -910,6 +587,7 @@ byte lcdEditValue(char *valName, unsigned int *value, unsigned int minValue, uns
   if (enterState != 0) {
     byte b = enterState;
     enterState = 0;
+    lcd.noCursor();
     return b;
   }
 
@@ -963,6 +641,7 @@ byte lcdEditValue(char *valName, unsigned int *value, unsigned int minValue, uns
         if (valStr.toInt() > maxValue) *value = maxValue;
         else if (valStr.toInt() < minValue) *value = minValue;
         else *value = valStr.toInt();
+        lcd.noCursor();
         return l_save;
       }
 
@@ -974,6 +653,7 @@ byte lcdEditValue(char *valName, unsigned int *value, unsigned int minValue, uns
           if (valStr.toInt() > maxValue) *value = maxValue;
           else if (valStr.toInt() < minValue) *value = minValue;
           else *value = valStr.toInt();
+          lcd.noCursor();
           return l_save;
         }
       }
@@ -988,6 +668,7 @@ byte lcdEditValue(char *valName, unsigned int *value, unsigned int minValue, uns
           if (valStr.toInt() > maxValue) *value = maxValue;
           else if (valStr.toInt() < minValue) *value = minValue;
           else *value = valStr.toInt();
+          lcd.noCursor();
           return l_save;
         }
       }
@@ -1013,6 +694,7 @@ byte lcdEditValue(char *valName, unsigned int *value, unsigned int minValue, uns
         if (valStr.length() != 0) valStr.remove(pos, 1);
         if (pos == valStr.length()) pos--;
       } else {
+        lcd.noCursor();
         return l_quit;
       }
 
@@ -1044,17 +726,41 @@ byte lcdEditValue(char *valName, unsigned int *value, unsigned int minValue, uns
 
   }
 
+  lcd.noCursor();
   return l_quit;
 
+}
+/**
+   Edit a boolean value. Since this doesn't support scrolling, there is no return value.
+*/
+void lcdEditBoolean(char *valName, boolean *value) {
+
+  const String opt[] = {"False", "True"};
+
+  if (value != 0 && value != 1) *value = true; //Make sure that it is a 0 or 1 for sure.
+
+  byte selection = lcdSelector(opt, 2, *value);
+
+  if (selection != 0) {
+    *value = selection;
+  }
+
+}
+
+/**
+ * See docstring below. This lacks 1 param
+ */
+byte lcdSelector(String *items, byte itemCount) {
+  return lcdSelector(items, itemCount, 0);
 }
 
 /**
    Makes a menu out of items.
    Returns selection + 1!!! This is so that 0 can be returned if the user exits the menu.
 */
-byte lcdSelector(String *items, byte itemCount) {
+byte lcdSelector(String *items, byte itemCount, byte startIndex) {
 
-  byte index = 0;
+  byte index = startIndex;
   boolean reprint = true;
 
   timeout = timeoutDuration;
