@@ -333,12 +333,12 @@ void cmdInterface() {
       }
 
       //Network keypress handler
-      if (key == '*' || key == '#' && !edit) {
+      if (key == b_CMD || key == b_GO && !edit) {
         edit = !edit;
         reprint = true;
         toSave = index;
         saveNext = true;
-      } else if (key == 'A') {
+      } else if (key == b_Up) {
         edit = false;
         segPos = 0;
         if (!saved) {
@@ -353,7 +353,7 @@ void cmdInterface() {
           index--;
           reprint = true;
         }
-      } else if (key == 'B') {
+      } else if (key == b_Down) {
         edit = false;
         segPos = 0;
         if (!saved) {
@@ -368,7 +368,7 @@ void cmdInterface() {
           index++;
           reprint = true;
         }
-      } else if (key == '#') {
+      } else if (key == b_GO) {
         if (edit) {
           reprint = true;
           if (index == 0) {
@@ -381,7 +381,7 @@ void cmdInterface() {
 
           }
         }
-      } else if (key == '.') {
+      } else if (key == b_DEL) {
         if (edit) {
           saved = false;
           reprint = true;
@@ -533,12 +533,12 @@ void cmdInterface() {
 
           char key = keyPressed(RELEASED);
 
-          if (key == 'A') {
+          if (key == b_Up) {
             index--;
             sustain = false;
-          } else if (key  == '.') {
+          } else if (key  == b_DEL) {
             sustain = false;
-          } else if (key == '#') {
+          } else if (key == b_GO) {
 
             const String opt[] = {"12-hour", "24-hour"};
 
@@ -633,7 +633,7 @@ byte lcdEditValue(char *valName, unsigned int *value, unsigned int minValue, uns
 
     char key = keyPressed(RELEASED);
 
-    if (key == '*' || key == '#' && !editing) {
+    if (key == b_CMD || key == b_GO && !editing) {
 
       editing = !editing;
       reprint = true;
@@ -645,7 +645,7 @@ byte lcdEditValue(char *valName, unsigned int *value, unsigned int minValue, uns
         return l_save;
       }
 
-    } else if (key == 'A' && (arrows == 2 || arrows == 3)) {
+    } else if (key == b_Up && (arrows == 2 || arrows == 3)) {
 
       if (editing) {
         if (lcdConfirm("Save?")) {
@@ -660,7 +660,7 @@ byte lcdEditValue(char *valName, unsigned int *value, unsigned int minValue, uns
 
       return l_scrollUp;
 
-    } else if (key == 'B' && (arrows == 1 || arrows == 3)) {
+    } else if (key == b_Down && (arrows == 1 || arrows == 3)) {
 
       if (editing) {
         if (lcdConfirm("Save?")) {
@@ -675,7 +675,7 @@ byte lcdEditValue(char *valName, unsigned int *value, unsigned int minValue, uns
 
       return l_scrollDown;
 
-    } else if (key == '#') {
+    } else if (key == b_GO) {
 
       if (editing) {
 
@@ -687,7 +687,7 @@ byte lcdEditValue(char *valName, unsigned int *value, unsigned int minValue, uns
 
       }
 
-    } else if (key == '.') {
+    } else if (key == b_DEL) {
 
       if (editing) {
         reprint = true;
@@ -796,21 +796,21 @@ byte lcdSelector(String *items, byte itemCount, byte startIndex) {
     char key = keyPressed(RELEASED);
 
     switch (key) {
-      case '.':
+      case b_DEL:
         return 0;
-      case 'A':
+      case b_Up:
         if (index != 0) {
           index--;
           reprint = true;
         }
         break;
-      case 'B':
+      case b_Down:
         if (index != itemCount - 1) {
           index++;
           reprint = true;
         }
         break;
-      case '#':
+      case b_GO:
         return index + 1;
     }
 

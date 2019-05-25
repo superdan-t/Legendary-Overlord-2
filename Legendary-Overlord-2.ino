@@ -36,6 +36,12 @@
 #define l_quit 3
 #define l_save 4
 
+#define b_DEL '.'
+#define b_GO '#'
+#define b_CMD '*'
+#define b_Up 'A'
+#define b_Down 'B'
+
 //Rotary Encoder
 const byte encoderPinA = 2;
 const byte encoderPinB = 3;
