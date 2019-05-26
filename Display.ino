@@ -90,7 +90,7 @@ void cmdInterface() {
     unsigned int temp = 0; //Will be used all throughout as a carrier to send non-integer data through the lcdEditValue function
 
     //The target dimmer has to be selected either way
-    if (lcdEditValue("Dimmer", &temp, 0, 50, 0) == l_quit) {
+    if (lcdEditValue("Dimmer", &temp, 0, 50, 0, true) == l_quit) {
       return;
     } else {
       targetDimmer = temp;
@@ -102,7 +102,7 @@ void cmdInterface() {
 
       temp = 0;
 
-      if (lcdEditValue("Remote Addr", &temp, 0, 127, 0) == l_quit) {
+      if (lcdEditValue("Remote Addr", &temp, 0, 127, 0, true) == l_quit) {
         return;
       } else {
         targetAddress = temp;
@@ -566,6 +566,10 @@ void cmdInterface() {
 
 }
 
+byte lcdEditValue(char *valName, unsigned int *value, unsigned int minValue, unsigned int maxValue, byte arrows) {
+  return lcdEditValue(valName, value, minValue, maxValue, arrows, false);
+}
+
 /**
    An LCD prompt for changing a variable.
    valName is displayed at the top
@@ -573,10 +577,10 @@ void cmdInterface() {
    arrows: 0 - none, 1 - down, 2 - up, 3 - up and down
    Returns an end state indicator:
 */
-byte lcdEditValue(char *valName, unsigned int *value, unsigned int minValue, unsigned int maxValue, byte arrows) {
+byte lcdEditValue(char *valName, unsigned int *value, unsigned int minValue, unsigned int maxValue, byte arrows, boolean startActive) {
 
   boolean reprint = true;
-  boolean editing = false;
+  boolean editing = startActive;
   byte pos = 0;
   byte maxPos = String(maxValue).length() - 1;
   static byte enterState;

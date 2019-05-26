@@ -69,7 +69,7 @@ void initDimmers(boolean loadMem) {
     digitalWrite(dimmers[i].pin, LOW);
     pinMode(dimmers[i].pin, INPUT);
   }
-  
+
   if (loadMem) {
     for (byte i = 0; i < d_DimmerCount; i++) {
       dimmers[i].pin = EEPROM.read(EEPROM.length() - i * 2 - 1);
@@ -114,6 +114,31 @@ byte getDimmerProperty(Dimmer *dim, byte prop) {
 }
 
 /**
+   Retrieve a property value from a connected I2C device.
+   While the data interpreter supports multiple dimmers, I don't yet see any use for this.
+*/
+byte getRemoteDimmerProperty(byte address, byte dimmerID, byte prop) {
+
+  Wire.beginTransmission(address);
+  Wire.write(2);
+  Wire.write(3);
+  Wire.write(prop);
+  Wire.write(1);
+  Wire.write(dimmerID);
+  Wire.endTransmission();
+
+  delay(10); //Give time to process
+
+  Wire.requestFrom(address, 1); //Only a single byte coming back
+
+  while (Wire.available() == 0); //Wait until there is a reply
+
+  return Wire.read(); //It was only 1 byte coming back. No need for anything complicated.
+
+
+}
+
+/**
    Sets the property of a dimmer and marks it as dirty so it can be written to the memory later.
    bindAll() will save all updated system dimmers[] to the EEPROM. If you are not using these dimmers, you
    must implement your own system to save the properties.
@@ -141,13 +166,44 @@ void setDimmerProperty(Dimmer *dim, byte prop, byte value) {
       dim->inverse = value;
       break;
     case 5:
-      dim->method = value;
+      if (value < 16) dim->method = value;
       break;
     default:
       return;
   }
 
   dim->dirty = true;
+
+}
+
+/**
+   Construct a message to a connected I2C device instructing it to change dimmer properties.
+   Because dimmers/values are sent in array format, they should be given to this procedure that way.
+*/
+void setRemoteDimmerProperties(byte address, byte *dimmerID, byte idCount, byte prop, byte *value, byte valueCount) {
+
+  Wire.beginTransmission(address);
+  Wire.write(1);
+
+  Wire.write(idCount);
+  for (byte i = 0; i < idCount; i++) {
+    Wire.write(dimmerID[i]);
+  }
+
+  Wire.write(prop);
+
+  Wire.write(valueCount);
+  for (byte i = 0; i < valueCount; i++) {
+    Wire.write(value[i]);
+  }
+
+  Wire.endTransmission();
+
+}
+
+void setRemoteDimmerProperty(byte address, byte dimmerID, byte prop, byte value) {
+
+  setRemoteDimmerProperties(address, dimmerID, 1, prop, value, 1);
 
 }
 
