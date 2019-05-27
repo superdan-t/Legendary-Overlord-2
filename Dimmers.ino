@@ -131,7 +131,7 @@ byte getRemoteDimmerProperty(byte address, byte dimmerID, byte prop) {
 
   Wire.requestFrom(address, 1); //Only a single byte coming back
 
-  while (Wire.available() == 0); //Wait until there is a reply
+  unsigned long stopListening = millis() + 10;
 
   return Wire.read(); //It was only 1 byte coming back. No need for anything complicated.
 

@@ -128,8 +128,8 @@ struct Dimmer {
   boolean inverse;
   boolean dirty;
 };
-long nextDimmerTick;
-long nextSecond;
+unsigned long nextDimmerTick;
+unsigned long nextSecond;
 Dimmer dimmers[d_DimmerCount];
 
 void setup() {
