@@ -108,10 +108,11 @@ void cmdInterface() {
         targetAddress = temp;
       }
 
-      /*
-         The necessary functions to support this procedure have not been implemented yet. The target device will be contacted to return
-         dimmer values for the selection. They will be loaded into the "remoteDimmer"
-      */
+      setDimmerProperty(&remoteDimmer, d_Pin, getRemoteDimmerProperty(targetAddress, targetDimmer, d_Pin));
+      setDimmerProperty(&remoteDimmer, d_Enabled, getRemoteDimmerProperty(targetAddress, targetDimmer, d_Enabled));
+      setDimmerProperty(&remoteDimmer, d_Bipolar, getRemoteDimmerProperty(targetAddress, targetDimmer, d_Bipolar));
+      setDimmerProperty(&remoteDimmer, d_Inverse, getRemoteDimmerProperty(targetAddress, targetDimmer, d_Inverse));
+      setDimmerProperty(&remoteDimmer, d_Method, getRemoteDimmerProperty(targetAddress, targetDimmer, d_Method));
 
     }
 
@@ -147,7 +148,7 @@ void cmdInterface() {
 
               } else {
 
-                //setRemoteDimmerProperty(targetAddress, targetDimmer, selection == 1 ? d_Method : d_Pin, temp); //ANTICIPATED FUNCTION
+                setRemoteDimmerProperty(targetAddress, targetDimmer, selection == 1 ? d_Method : d_Pin, temp);
 
               }
               break;
@@ -173,9 +174,9 @@ void cmdInterface() {
         if (editType == 1) {
           bindAll();
         } else {
-          //setRemoteDimmerProperty(targetAddress, targetDimmer, selection - 2, prop); //ANTICIPATED FUNCTION
+          setRemoteDimmerProperty(targetAddress, targetDimmer, selection - 2, prop);
         }
-        
+
       }
 
 
@@ -645,6 +646,7 @@ byte lcdEditValue(char *valName, unsigned int *value, unsigned int minValue, uns
         if (valStr.toInt() > maxValue) *value = maxValue;
         else if (valStr.toInt() < minValue) *value = minValue;
         else *value = valStr.toInt();
+        lcd.noBlink();
         lcd.noCursor();
         return l_save;
       }
@@ -657,6 +659,7 @@ byte lcdEditValue(char *valName, unsigned int *value, unsigned int minValue, uns
           if (valStr.toInt() > maxValue) *value = maxValue;
           else if (valStr.toInt() < minValue) *value = minValue;
           else *value = valStr.toInt();
+          lcd.noBlink();
           lcd.noCursor();
           return l_save;
         }
@@ -672,6 +675,7 @@ byte lcdEditValue(char *valName, unsigned int *value, unsigned int minValue, uns
           if (valStr.toInt() > maxValue) *value = maxValue;
           else if (valStr.toInt() < minValue) *value = minValue;
           else *value = valStr.toInt();
+          lcd.noBlink();
           lcd.noCursor();
           return l_save;
         }
@@ -698,6 +702,7 @@ byte lcdEditValue(char *valName, unsigned int *value, unsigned int minValue, uns
         if (valStr.length() != 0) valStr.remove(pos, 1);
         if (pos == valStr.length()) pos--;
       } else {
+        lcd.noBlink();
         lcd.noCursor();
         return l_quit;
       }
@@ -730,6 +735,7 @@ byte lcdEditValue(char *valName, unsigned int *value, unsigned int minValue, uns
 
   }
 
+  lcd.noBlink();
   lcd.noCursor();
   return l_quit;
 
@@ -752,8 +758,8 @@ void lcdEditBoolean(char *valName, boolean *value) {
 }
 
 /**
- * See docstring below. This lacks 1 param
- */
+   See docstring below. This lacks 1 param
+*/
 byte lcdSelector(String *items, byte itemCount) {
   return lcdSelector(items, itemCount, 0);
 }
