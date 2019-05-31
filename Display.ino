@@ -752,7 +752,7 @@ void lcdEditBoolean(char *valName, boolean *value) {
   byte selection = lcdSelector(opt, 2, *value);
 
   if (selection != 0) {
-    *value = selection;
+    *value = selection - 1;
   }
 
 }
