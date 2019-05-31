@@ -102,6 +102,7 @@ void processData(byte *buf, char inType) {
     } else if (buf[1] == 3) {
       for (byte i = 0; i < buf[3]; i++) {
         replyBuffer[i] = getDimmerProperty(&dimmers[buf[4 + i]], buf[2]);
+        replySize += 1;
       }
     }
 
