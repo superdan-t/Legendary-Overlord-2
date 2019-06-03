@@ -20,6 +20,32 @@ void setLevel(Dimmer *dim, byte value) {
   }
 }
 
+void setRemoteLevels(byte address, byte dimCount, byte *dimmerIDs, byte valueCount, byte *values) {
+
+  Wire.beginTransmission(address);
+
+  Wire.write(1);
+  
+  Wire.write(dimCount);
+  for (byte i = 0; i < dimCount; i++) {
+    Wire.write(dimmerIDs[i]);
+  }
+
+  Wire.write(0);
+
+  Wire.write(valueCount);
+  for (byte i = 0; i < valueCount; i++) {
+    Wire.write(values[i]);
+  }
+
+  Wire.endTransmission();
+  
+}
+
+void setRemoteLevel(byte address, byte dimmerID, byte value) {
+  setRemoteLevels(address, 1, &dimmerID, 1, &value);
+}
+
 /**
    Controls the special functions for dimmers. If forceAll is true, it will update the output of all of the enabled dimmers, even if they have no functions applied.
 */
