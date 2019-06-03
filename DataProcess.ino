@@ -8,6 +8,8 @@ void processData(byte *buf, char inType) {
     //Do I want to look at this ever again? No. Absolutely not. And you don't either.
     if (buf[2 + buf[1]] == 0) {
 
+      //Set the level of local dimmers
+
       for (byte i = 0; i < buf[1]; i++) {
         if (i < buf[3 + buf[1]]) {
           setLevel(&dimmers[buf[2 + i]], buf[4 + buf[1] + i]);
@@ -105,85 +107,38 @@ void processData(byte *buf, char inType) {
         replySize += 1;
       }
     }
+  } else if (buf[0] == 3) {
 
+    //RESERVED FOR I2C DEVICES
+    
   } else if (buf[0] == 4) {
-    //    /*
-    //       Forward the message to a connected device.
-    //       Order:
-    //       (4 - forward) (fwd type - 0 Serial, 1 Serial1, 2 Serial2, 3 Serial3, 4 I2C) (addr - I2C ONLY) (message length) [message...]
-    //    */
-    //    switch (buf[1]) {
-    //      case 0:
-    //        Serial.write(buf[2]); //Serial transmissions always begin with the length. No address because only 1 device per UART.
-    //        for (byte i = 0; i < buf[2]; i++) {
-    //          Serial.write(buf[i + 3]);
-    //        }
-    //      //The other serial ports have not been implemented elsewhere, so they would do nothing here.
-    //      case 4:
-    //        Wire.beginTransmission(buf[2]); //Begin I2C transmission to the provided address. Length doesn't have to be sent, but is used.
-    //        for (byte i = 0; i < buf[3]; i++) {
-    //          Wire.write(buf[i + 4]);
-    //        }
-    //        Wire.endTransmission();
-    //    }
+
+    //The format used above is confusing and I would like to rewrite it differently, but really cannot right now.
+    //The location of always-present data in the buffer (ex. sub-command) shouldn't change, while changing-length data (ex. dimmer list) should be at the end
+
+    //Remote dimmer commands, buf[1] = address, buf[2] = sub-command, buf[3] = count of dimmers, buf[4] = count of values, then the lists. Once again, always-present required data shouldn't move.
+
+    if (buf[2] == 0) {
+
+      byte targetDimmers[buf[3]];
+      byte targetValues[buf[4]];
+
+      for (byte i = 0; i < buf[3]; i++) {
+        targetDimmers[i] = buf[5 + i];
+      }
+
+      for (byte i = 0; i < buf[4]; i++) {
+        targetValues[i] = buf[5 + buf[3] + i];
+      }
+
+      setRemoteLevels(buf[1], buf[3], targetDimmers, buf[4], targetValues);
+      
+    }
+
+    
+    
+   
   } else if (buf[0] == 5) {
-    //  FORWARDING HAS BEEN DISABLED DUE TO POSSIBLE EXPLOITATION
-    //    /*
-    //       Forwards a message to a connected device and expects a reply with a definite length.
-    //       (5 - fwd & receive) (fwd type) (addr - I2C ONLY) (reply length) (message length) [message...]
-    //    */
-    //    switch (buf[1]) {
-    //      case 4:
-    //
-    //        Wire.beginTransmission(buf[2]);
-    //        for (byte i = 0; i < buf[4]; i++) {
-    //          Wire.write(buf[i + 5]);
-    //        }
-    //        Wire.endTransmission();
-    //
-    //        shortPause(10); //Give time for the receiver process
-    //
-    //        Wire.requestFrom(buf[2], buf[3]);
-    //
-    //        replySize = buf[3];
-    //
-    //        for (byte replyIndex = 0; Wire.available(); replyIndex++) {
-    //          replyBuffer[replyIndex] = Wire.read();
-    //        }
-    //
-    //    }
-    //  } else if (buf[0] == 6) {
-    //    /*
-    //       Forwards a message to a connected device and expects a reply with an unknown length.
-    //       This does NOT make the reply length fill in automatically. The receiver must be set up to support this command.
-    //       (6 - fwd & receive indef) (fwd type) (addr - I2C ONLY) (message length) [message...]
-    //    */
-    //    switch (buf[1]) {
-    //      case 4:
-    //
-    //        Wire.beginTransmission(buf[2]);
-    //        for (byte i = 0; i < buf[4]; i++) {
-    //          Wire.write(buf[i + 5]);
-    //        }
-    //        Wire.endTransmission();
-    //
-    //        shortPause(10); //Give time for the receiver process
-    //
-    //        Wire.requestFrom(buf[2], 1); //Request 1 byte, which, to support this format, should return the length of the full reply to be requested next.
-    //
-    //        shortPause(5); //Receiver moving values
-    //
-    //        byte requestLength = Wire.read();
-    //
-    //        Wire.requestFrom(buf[2], requestLength);
-    //
-    //        replySize = requestLength;
-    //
-    //        for (byte replyIndex = 0; Wire.available(); replyIndex++) {
-    //          replyBuffer[replyIndex] = Wire.read();
-    //        }
-    //
-    //    }
 
   } else if (buf[0] == 6) {
 
