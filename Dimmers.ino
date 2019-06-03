@@ -182,21 +182,23 @@ void setDimmerProperty(Dimmer *dim, byte prop, byte value) {
    Construct a message to a connected I2C device instructing it to change dimmer properties.
    Because dimmers/values are sent in array format, they should be given to this procedure that way.
 */
-void setRemoteDimmerProperties(byte address, byte *dimmerID, byte idCount, byte prop, byte *value, byte valueCount) {
+void setRemoteDimmerProperties(byte address, byte *dimmerIDs, byte idCount, byte prop, byte *values, byte valueCount) {
 
   Wire.beginTransmission(address);
-  Wire.write(1);
+  Wire.write(1); //Dimmers command
 
   Wire.write(idCount);
   for (byte i = 0; i < idCount; i++) {
-    Wire.write(dimmerID[i]);
+    Wire.write(dimmerIDs[i]);
   }
+
+  Wire.write(3); //Set props subcommand
 
   Wire.write(prop);
 
   Wire.write(valueCount);
   for (byte i = 0; i < valueCount; i++) {
-    Wire.write(value[i]);
+    Wire.write(values[i]);
   }
 
   Wire.endTransmission();
@@ -205,7 +207,7 @@ void setRemoteDimmerProperties(byte address, byte *dimmerID, byte idCount, byte 
 
 void setRemoteDimmerProperty(byte address, byte dimmerID, byte prop, byte value) {
 
-  setRemoteDimmerProperties(address, dimmerID, 1, prop, value, 1);
+  setRemoteDimmerProperties(address, &dimmerID, 1, prop, &value, 1);
 
 }
 
