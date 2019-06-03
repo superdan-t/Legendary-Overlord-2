@@ -53,9 +53,16 @@ void keypadKeys() {
 
 void onKeyPress(char key) {
   switch (key) {
-    case '*':
+    case b_CMD:
+    
       cmdInterface();
+
+      //Sometimes the cursor doesn't get turned off
+      lcd.noBlink();
+      lcd.noCursor();
+      
       updateHomeScreen();
+      
       break;
   }
 }
