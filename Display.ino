@@ -747,7 +747,7 @@ void lcdEditBoolean(char *valName, boolean *value) {
 
   const String opt[] = {"False", "True"};
 
-  if (value != 0 && value != 1) *value = true; //Make sure that it is a 0 or 1 for sure.
+  if (*value != 0 && *value != 1) *value = true; //Make sure that it is a 0 or 1 for sure.
 
   byte selection = lcdSelector(opt, 2, *value);
 
