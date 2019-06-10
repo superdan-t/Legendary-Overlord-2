@@ -20,25 +20,28 @@ void processData(byte *buf, char inType) {
         }
       }
     } else if (buf[2 + buf[1]] == 1) {
-      /* Set dimmer data bytes. Uses adapted standard format, except each supplied "value" includes the 4 data bytes.
-          (1 - dimmer set) (count) [Dimmers] (1 - data bytes) (count) [data 0, data 1, data 2, data 3] [data 0, data 1, ..] ...
+      /* Set dimmer data bytes. Uses adapted standard format, except each supplied "value" includes the 5 data bytes.
+          (1 - dimmer set) (count) [Dimmers] (1 - data bytes) (count) [data 0, data 1, data 2, data 3, data 4] [data 0, data 1, ..] ...
       */
       for (byte i = 0; i < buf[1]; i++) {
         if (i < buf[3 + buf[1]]) {
-          dimmers[buf[2 + i]].data[0] = buf[4 + buf[1] + i * 4];
-          dimmers[buf[2 + i]].data[1] = buf[5 + buf[1] + i * 4];
-          dimmers[buf[2 + i]].data[2] = buf[6 + buf[1] + i * 4];
-          dimmers[buf[2 + i]].data[3] = buf[7 + buf[1] + i * 4];
+          dimmers[buf[2 + i]].data[0] = buf[4 + buf[1] + i * 5];
+          dimmers[buf[2 + i]].data[1] = buf[5 + buf[1] + i * 5];
+          dimmers[buf[2 + i]].data[2] = buf[6 + buf[1] + i * 5];
+          dimmers[buf[2 + i]].data[3] = buf[7 + buf[1] + i * 5];
+          dimmers[buf[2 + i]].data[4] = buf[8 + buf[1] + i * 5];
         } else if (i >= buf[3 + buf[1]] && 0 != buf[3 + buf[1]]) {
-          dimmers[buf[2 + i]].data[0] = buf[4 + buf[1] + (buf[3 + buf[1]] - 1) * 4];
-          dimmers[buf[2 + i]].data[1] = buf[5 + buf[1] + (buf[3 + buf[1]] - 1) * 4];
-          dimmers[buf[2 + i]].data[2] = buf[6 + buf[1] + (buf[3 + buf[1]] - 1) * 4];
-          dimmers[buf[2 + i]].data[3] = buf[7 + buf[1] + (buf[3 + buf[1]] - 1) * 4];
+          dimmers[buf[2 + i]].data[0] = buf[4 + buf[1] + (buf[3 + buf[1]] - 1) * 5];
+          dimmers[buf[2 + i]].data[1] = buf[5 + buf[1] + (buf[3 + buf[1]] - 1) * 5];
+          dimmers[buf[2 + i]].data[2] = buf[6 + buf[1] + (buf[3 + buf[1]] - 1) * 5];
+          dimmers[buf[2 + i]].data[3] = buf[7 + buf[1] + (buf[3 + buf[1]] - 1) * 5];
+          dimmers[buf[2 + i]].data[4] = buf[8 + buf[1] + (buf[3 + buf[1]] - 1) * 5];
         } else {
           dimmers[buf[2 + i]].data[0] = 0;
           dimmers[buf[2 + i]].data[1] = 0;
           dimmers[buf[2 + i]].data[2] = 0;
           dimmers[buf[2 + i]].data[3] = 0;
+          dimmers[buf[2 + i]].data[4] = 0;
         }
       }
 

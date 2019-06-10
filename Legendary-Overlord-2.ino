@@ -131,7 +131,7 @@ struct Dimmer {
   byte method;
   byte value; //Use setLevel(Dimmer dim, byte value). This will not update it unless you call runDimmers(true)
   byte function;
-  byte data[4];
+  byte data[5];
   boolean enabled;
   boolean bipolar;
   boolean inverse;
