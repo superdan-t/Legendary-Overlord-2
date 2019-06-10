@@ -25,15 +25,13 @@ void setRemoteLevels(byte address, byte dimCount, byte *dimmerIDs, byte valueCou
   Wire.beginTransmission(address);
 
   Wire.write(1);
-
+  Wire.write(0);
   Wire.write(dimCount);
+  Wire.write(valueCount);
+
   for (byte i = 0; i < dimCount; i++) {
     Wire.write(dimmerIDs[i]);
   }
-
-  Wire.write(0);
-
-  Wire.write(valueCount);
   for (byte i = 0; i < valueCount; i++) {
     Wire.write(values[i]);
   }
@@ -207,10 +205,10 @@ byte getDimmerProperty(Dimmer *dim, byte prop) {
 byte getRemoteDimmerProperty(byte address, byte dimmerID, byte prop) {
 
   Wire.beginTransmission(address);
-  Wire.write(2);
-  Wire.write(3);
+  Wire.write(2); //Put values in reply buffer
+  Wire.write(3); //Properties sub-command
+  Wire.write(1); //1 dimmer ID
   Wire.write(prop);
-  Wire.write(1);
   Wire.write(dimmerID);
   Wire.endTransmission();
 
@@ -269,33 +267,53 @@ void setDimmerProperty(Dimmer *dim, byte prop, byte value) {
    Construct a message to a connected I2C device instructing it to change dimmer properties.
    Because dimmers/values are sent in array format, they should be given to this procedure that way.
 */
-void setRemoteDimmerProperties(byte address, byte *dimmerIDs, byte idCount, byte prop, byte *values, byte valueCount) {
-
+void setRemoteDimmerProperties(byte address, byte idCount, byte *dimmerIDs, byte prop, byte valueCount, byte *values) {
+  
   Wire.beginTransmission(address);
-  Wire.write(1); //Dimmers command
-
+  
+  Wire.write(1);
+  Wire.write(3);
+  Wire.write(prop);
+  Wire.write(valueCount);
   Wire.write(idCount);
+  
   for (byte i = 0; i < idCount; i++) {
     Wire.write(dimmerIDs[i]);
   }
-
-  Wire.write(3); //Set props subcommand
-
-  Wire.write(prop);
-
-  Wire.write(valueCount);
   for (byte i = 0; i < valueCount; i++) {
     Wire.write(values[i]);
   }
-
+  
   Wire.endTransmission();
-
+  
 }
 
 void setRemoteDimmerProperty(byte address, byte dimmerID, byte prop, byte value) {
 
-  setRemoteDimmerProperties(address, &dimmerID, 1, prop, &value, 1);
+  setRemoteDimmerProperties(address, 1, &dimmerID, prop, 1, &value);
 
+}
+
+void setRemoteData(byte address, byte idCount, byte *dimmerIDs, byte valueCount, byte *values) {
+  Wire.beginTransmission(address);
+  
+  Wire.write(1); //Dimmers command
+  Wire.write(1); //Data subcommand
+  Wire.write(idCount);
+  Wire.write(valueCount);
+  
+  for (byte i = 0; i < idCount; i++) {
+    Wire.write(dimmerIDs[i]);
+  }
+  for (byte i = 0; i < valueCount; i++) {
+    Wire.write(values[i * 5 + 0]);
+    Wire.write(values[i * 5 + 1]);
+    Wire.write(values[i * 5 + 2]);
+    Wire.write(values[i * 5 + 3]);
+    Wire.write(values[i * 5 + 4]);
+  }
+  
+  Wire.endTransmission();
 }
 
 /**

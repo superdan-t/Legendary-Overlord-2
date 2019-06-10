@@ -3,110 +3,94 @@ void processData(byte *buf, char inType) {
   if (buf[0] == 0) {
     replyBuffer[0] = 6;
     replySize = 1;
-  } else if (buf[0] == 1) {
+} else if (buf[0] == 1) {
 
-     //Do I want to look at this ever again? No. Absolutely not. And you don't either. Seriously. Read the docs, not the code.
-    if (buf[2 + buf[1]] == 0) {
+    //Set local dimmers
+    //buf[1] = sub-command, buf[2] = count of dimmers, buf[3] = count of values, then lists
 
-      for (byte i = 0; i < buf[1]; i++) {
-        if (i < buf[3 + buf[1]]) {
-          setLevel(&dimmers[buf[2 + i]], buf[4 + buf[1] + i]);
-        } else if (i >= buf[3 + buf[1]] && 0 != buf[3 + buf[1]]) {
-          setLevel(&dimmers[buf[2 + i]], buf[3 + buf[1] + buf[3 + buf[1]]]);
-        } else {
-          setLevel(&dimmers[buf[2 + i]], 0);
-        }
+    for (byte i = 0; i < buf[2]; i++) {
+      //Run for each dimmer
+      switch (buf[1]) {
+        case 0:
+          //Output level
+          if (buf[2] <= buf[3] || i < buf[3]) {
+            setLevel(&dimmers[buf[4 + i]], buf[4 + buf[2] + i]);
+          } else {
+            setLevel(&dimmers[buf[4 + i]], buf[3 + buf[2] + buf[3]]);
+          }
+          break;
+        case 1:
+          //Data values
+          if (buf[2] <= buf[3] || i < buf[3]) {
+            dimmers[buf[4 + i]].data[0] = buf[4 + buf[2] + i * 5];
+            dimmers[buf[4 + i]].data[1] = buf[5 + buf[2] + i * 5];
+            dimmers[buf[4 + i]].data[2] = buf[6 + buf[2] + i * 5];
+            dimmers[buf[4 + i]].data[3] = buf[7 + buf[2] + i * 5];
+            dimmers[buf[4 + i]].data[4] = buf[8 + buf[2] + i * 5];
+          } else if (buf[2] > buf[3] && buf[3] != 0) {
+            dimmers[buf[4 + i]].data[0] = buf[4 + buf[2] + (buf[3] - 1) * 5];
+            dimmers[buf[4 + i]].data[1] = buf[5 + buf[2] + (buf[3] - 1) * 5];
+            dimmers[buf[4 + i]].data[2] = buf[6 + buf[2] + (buf[3] - 1) * 5];
+            dimmers[buf[4 + i]].data[3] = buf[7 + buf[2] + (buf[3] - 1) * 5];
+            dimmers[buf[4 + i]].data[4] = buf[8 + buf[2] + (buf[3] - 1) * 5];
+          } else {
+            dimmers[buf[4 + i]].data[0] = 0;
+            dimmers[buf[4 + i]].data[1] = 0;
+            dimmers[buf[4 + i]].data[2] = 0;
+            dimmers[buf[4 + i]].data[3] = 0;
+            dimmers[buf[4 + i]].data[4] = 0;
+          }
+          break;
+        case 2:
+          //Function
+          if (buf[2] <= buf[3] || i < buf[3]) {
+            dimmers[buf[4 + i]].function = buf[4 + buf[2] + i];
+          } else {
+            dimmers[buf[4 + i]].function = buf[3 + buf[2] + buf[3]];
+          }
+          break;
+        case 3:
+          //Properties. buf[2] = property, buf[3] = count of dimmers, buf[4] = count of values, lists
+          if (buf[3] <= buf[4] || i < buf[4]) {
+            setDimmerProperty(&dimmers[buf[5 + i]], buf[2], buf[5 + buf[3] + i]);
+          } else {
+            setDimmerProperty(&dimmers[buf[5 + i]], buf[2], buf[4 + buf[3] + buf[4]]);
+          }
+          bindAll();
+          break;
       }
-    } else if (buf[2 + buf[1]] == 1) {
-      /* Set dimmer data bytes. Uses adapted standard format, except each supplied "value" includes the 4 data bytes.
-       *  (1 - dimmer set) (count) [Dimmers] (1 - data bytes) (count) [data 0, data 1, data 2, data 3] [data 0, data 1, ..] ...
-       */
-      for (byte i = 0; i < buf[1]; i++) {
-        if (i < buf[3 + buf[1]]) {
-          dimmers[buf[2 + i]].data[0] = buf[4 + buf[1] + i * 4];
-          dimmers[buf[2 + i]].data[1] = buf[5 + buf[1] + i * 4];
-          dimmers[buf[2 + i]].data[2] = buf[6 + buf[1] + i * 4];
-          dimmers[buf[2 + i]].data[3] = buf[7 + buf[1] + i * 4];
-        } else if (i >= buf[3 + buf[1]] && 0 != buf[3 + buf[1]]) {
-          dimmers[buf[2 + i]].data[0] = buf[4 + buf[1] + (buf[3 + buf[1]] - 1) * 4];
-          dimmers[buf[2 + i]].data[1] = buf[5 + buf[1] + (buf[3 + buf[1]] - 1) * 4];
-          dimmers[buf[2 + i]].data[2] = buf[6 + buf[1] + (buf[3 + buf[1]] - 1) * 4];
-          dimmers[buf[2 + i]].data[3] = buf[7 + buf[1] + (buf[3 + buf[1]] - 1) * 4];
-        } else {
-          dimmers[buf[2 + i]].data[0] = 0;
-          dimmers[buf[2 + i]].data[1] = 0;
-          dimmers[buf[2 + i]].data[2] = 0;
-          dimmers[buf[2 + i]].data[3] = 0;
-        }
-      }
-
-    } else if (buf[2 + buf[1]] == 2) {
-      /*
-       * Set dimmer functions. Uses standard format.
-       */
-      for (byte i = 0; i < buf[1]; i++) {
-        if (i < buf[3 + buf[1]]) {
-          dimmers[buf[2 + i]].function = buf[4 + buf[1] + i];
-        } else if (i >= buf[3 + buf[1]] && 0 != buf[3 + buf[1]]) {
-          dimmers[buf[2 + i]].function = buf[3 + buf[1] + buf[3 + buf[1]]];
-        } else {
-          dimmers[buf[2 + i]].function = 0;
-        }
-      }
-
-    } else if (buf[2 + buf[1]] == 3) {
-      /*
-       * Set dimmer properties. Uses standard format
-       */
-      if (inType == 'I') {
-        //For security, internet sources cannot change properties. Send back a negative acknowledge
-        replyBuffer[0] = 21;
-        replySize = 1;
-        return;
-      }
-      for (byte i = 0; i < buf[1]; i++) {
-        if (i < buf[4 + buf[1]]) {
-          setDimmerProperty(&dimmers[buf[2 + i]], buf[3 + buf[1]], buf[5 + buf[1] + i]);
-        } else if (i >= buf[4 + buf[1]] && 0 != buf[4 + buf[1]]) {
-          setDimmerProperty(&dimmers[buf[2 + i]], buf[3 + buf[1]], buf[4 + buf[1] + buf[4 + buf[1]]]);
-        } else {
-          setDimmerProperty(&dimmers[buf[2 + i]], buf[3 + buf[1]], 0);
-        }
-      }
-      bindAll();
 
     }
 
   } else if (buf[0] == 2) {
-    /**
-     * Put dimmer values in the reply buffer. This does not match the "set" format used above. It goes [value to get] (sub) [dimmers]
-     */
-     if (buf[1] == 0) {
-      for (byte i = 0; i < buf[2]; i++) {
-        replyBuffer[i] = dimmers[buf[3 + i]].value;
-        replySize++;
+
+    //Put dimmer values in the reply buffer. buf[1] = value to get, buf[2] = count of dimmers, buf[3] = property FOR GET PROPERTIES ONLY, lists...
+
+    for (byte i = 0; i < buf[2]; i++) {
+      switch (buf[1]) {
+        case 0:
+          replyBuffer[i] = dimmers[buf[3 + i]].value;
+          replySize++;
+          break;
+        case 1:
+          replyBuffer[i * 5 + 0] = dimmers[buf[3 + i]].data[0];
+          replyBuffer[i * 5 + 1] = dimmers[buf[3 + i]].data[1];
+          replyBuffer[i * 5 + 2] = dimmers[buf[3 + i]].data[2];
+          replyBuffer[i * 5 + 3] = dimmers[buf[3 + i]].data[3];
+          replyBuffer[i * 5 + 4] = dimmers[buf[3 + i]].data[4];
+          replySize += 5;
+          break;
+        case 2:
+          replyBuffer[i] = dimmers[buf[3 + i]].function;
+          replySize++;
+          break;
+        case 3:
+          replyBuffer[i] = getDimmerProperty(&dimmers[buf[4 + i]], buf[3]);
+          replySize++;
+          break;
       }
-     } else if (buf[1] == 1) {
-      for (byte i = 0; i < buf[2]; i++) {
-        replyBuffer[i * 4] = dimmers[buf[3 + i]].data[0];
-        replyBuffer[i * 4 + 1] = dimmers[buf[3 + i]].data[1];
-        replyBuffer[i * 4 + 2] = dimmers[buf[3 + i]].data[2];
-        replyBuffer[i * 4 + 3] = dimmers[buf[3 + i]].data[3];
-        replySize += 4;
-      }
-     } else if (buf[1] == 2) {
-      for (byte i = 0; i < buf[2]; i++) {
-        replyBuffer[i] = dimmers[buf[3 + i]].function;
-        replySize += 1;
-      }
-     } else if (buf[1] == 3) {
-      for (byte i = 0; i < buf[3]; i++) {
-        replyBuffer[i] = getDimmerProperty(&dimmers[buf[4 + i]], buf[2]);
-        replySize += 1;
-      }
-     }
-    
-    
+    }
+
   } else if (buf[0] == 3) {
     i2cAddr = buf[1];
     EEPROM.update(m_I2C_Addr, i2cAddr);
