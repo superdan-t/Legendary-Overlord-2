@@ -142,7 +142,8 @@ void processData(byte *buf, char inType) {
 
   } else if (buf[0] == 6) {
 
-    //RESERVED FOR OTHER DEVICES. HAS NO EFFECT ON MASTER DEVICE
+    //Time was requested
+    sendTimeUpdate();
 
   } else if (buf[0] == 7) {
     //Set system variables
@@ -232,6 +233,12 @@ void processData(byte *buf, char inType) {
         replySize = 6;
         break;
     }
+  } else if (buf[0] == 9) {
+    //Pause for scripts only
+    if (inType == 'L') {
+      shortPause(buf[1] * 100);
+    }
+    
   }
 
 }

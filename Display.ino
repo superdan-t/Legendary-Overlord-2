@@ -852,3 +852,16 @@ boolean lcdConfirm(char *prompt) {
   }
 
 }
+
+void sendTimeUpdate() {
+
+  Serial1.write(3); //Message size
+  Serial1.write(5); //Update time display
+  if (timeFormat == 0) {
+    Serial1.write(now.hour() > 12 ? now.hour() - 12 : now.hour());
+  } else {
+    Serial1.write(now.hour());
+  }
+  Serial1.write(now.minute());
+  
+}

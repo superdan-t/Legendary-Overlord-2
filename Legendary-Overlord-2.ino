@@ -15,6 +15,8 @@
 #include <Keypad.h>
 #include <LiquidCrystal_I2C.h>
 #include <RTClib.h>
+#include <SD.h>
+#include <SPI.h>
 #include <Wire.h>
 
 #define d_DimmerCount 50
@@ -51,16 +53,18 @@ volatile byte encoderPos = 0;
 volatile byte oldEncPos = 0;
 volatile byte reading = 0;
 
-//Keypad
+
+//Keypad, key order is backwards because of my setup
 const byte noRestriction = 100;
 const byte ROWS = 4;
 const byte COLS = 4;
 const char keys[ROWS][COLS] = {
-  {'7', '8', '9', 'A'},
-  {'4', '5', '6', 'B'},
-  {'1', '2', '3', '/'},
-  {'0', '.', '#', '*'}
+  {'*', '#', '.', '0'},
+  {'/', '3', '2', '1'},
+  {'B', '6', '5', '4'},
+  {'A', '9', '8', '7'}
 };
+
 const byte rowPins[ROWS] = {22, 23, 24, 25};
 const byte colPins[COLS] = {26, 27, 28, 29};
 Keypad kpd = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
@@ -77,6 +81,8 @@ byte ip[] = {192, 168, 1, 167};
 unsigned int socketPort = 0;
 byte packetBuffer[UDP_TX_PACKET_MAX_SIZE];
 EthernetUDP socket;
+EthernetServer webserver(80);
+String readString = String(100);
 
 //Misc Data
 byte dataBuffer[50];
@@ -84,6 +90,9 @@ byte replyBuffer[50];
 byte replySize = 0;
 byte serialIndex = 0;
 byte serialLength = 0;
+byte serial1Index = 0;
+byte serial1Length = 0;
+byte serial1Buffer[50];
 
 //Display
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
@@ -132,9 +141,9 @@ unsigned long nextDimmerTick;
 unsigned long nextSecond;
 Dimmer dimmers[d_DimmerCount];
 
-void setup() {
+boolean sdPresent = false;
 
-  Serial.begin(115200);
+void setup() {
 
   lcd.begin(16, 2);
 
@@ -145,6 +154,9 @@ void setup() {
   lcd.print("Hello, World!");
   lcd.setCursor(0, 1);
   lcd.print("Init..");
+
+  Serial.begin(115200);
+  Serial1.begin(115200);
 
   initDimmers(true);
 
@@ -173,6 +185,8 @@ void setup() {
 
   beginNetwork();
 
+  sdPresent = SD.begin(4);
+
   updateHomeScreen();
 
 }
@@ -200,29 +214,19 @@ void loop() {
       updateHomeScreen();
 
       
-      //Update the 4 x 7seg remote display, if it exists
-      if (i2cDisplay != 0) {
+      sendTimeUpdate();
 
-        Wire.beginTransmission(i2cDisplay);
-        Wire.write(6); //Command byte exclusive to I2C display
-        Wire.write(0); //Subcommand for I2C display to recognize it is receiving the time
-        Wire.write(timeFormat); //Tell it how to display
-        Wire.write(now.hour());
-        Wire.write(now.minute());
-        Wire.endTransmission(); //No reply is expected
-        
-      }
 
-      
     } else {
       now = rtc.now();
     }
-    
+
     nextSecond = millis() + 1000;
   }
 
   keypadKeys();
   checkSocket();
+  runServer();
 
 }
 
@@ -241,6 +245,29 @@ void serialEvent() {
           Serial.write(replySize);
           for (byte i = 0; i < replySize; i++) {
             Serial.write(replyBuffer[i]);
+          }
+          replySize = 0; //Signals that replyBuffer isn't being used and can be overwritten. No need to clear the whole thing.
+        }
+      }
+    }
+  }
+}
+
+void serialEvent1() {
+  while (Serial1.available()) {
+    byte newData = Serial1.read();
+    if (0 == serial1Length) {
+      serial1Length = newData;
+    } else {
+      serial1Buffer[serial1Index++] = newData;
+      if (serial1Index >= serial1Length) {
+        processData(serial1Buffer, 'S');
+        serial1Index = 0;
+        serial1Length = 0;
+        if (replySize > 0) {
+          Serial1.write(replySize);
+          for (byte i = 0; i < replySize; i++) {
+            Serial1.write(replyBuffer[i]);
           }
           replySize = 0; //Signals that replyBuffer isn't being used and can be overwritten. No need to clear the whole thing.
         }
@@ -289,4 +316,34 @@ void longPause(long duration) {
 
     checkSocket();
   }
+}
+
+int countSegments(String string, char split) {
+  byte stepper = 0;
+  if (string.length() == 0)
+    return stepper;
+  stepper = 1;
+  for (int i = 0; i < string.length(); i++) {
+    if ((string[i] == split) && (i + 1 != string.length()))
+      stepper++;
+  }
+  return stepper;
+}
+
+//Takes a string, splits it at ever character "split" and returns segment number "index"
+String returnSegment(String string, byte index, char split) {
+  byte indexSegmentStart = 0;
+  byte currentIndex = 0;
+  for (int i = 0; (i < string.length()) && (index != currentIndex); i++) {
+    if (string[i] == split)
+      currentIndex++;
+    indexSegmentStart = i + 1;
+  }
+
+  String segment = "";
+  for (int i = indexSegmentStart; (i < string.length()) && (string[i] != split); i++)
+    segment += string[i];
+
+  return segment;
+
 }
