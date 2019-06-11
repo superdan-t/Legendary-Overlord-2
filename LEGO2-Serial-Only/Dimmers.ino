@@ -51,10 +51,71 @@ void runDimmers(boolean forceAll) {
               }
             }
 
-            break;
           } else {
             dimmers[i].data[3]++;
           }
+          break;
+        case 2:
+          //Alternate between two states (strobe). data[0] is up ticks, data[1] is down ticks, data[2] is up value, data[3] is down value
+
+          if (dimmers[i].data[4] == 0) {
+            //Meaning that the function was just applied
+            setLevel(&dimmers[i], dimmers[i].data[2]);
+            dimmers[i].data[4] = dimmers[i].data[0];
+          } else if (dimmers[i].value == dimmers[i].data[2]) {
+            //The dimmer is currently up
+            dimmers[i].data[4]--;
+            if (dimmers[i].data[4] == 0) {
+              //Time to switch
+              setLevel(&dimmers[i], dimmers[i].data[3]);
+              dimmers[i].data[4] = dimmers[i].data[1];
+            }
+          } else if (dimmers[i].value == dimmers[i].data[3]) {
+            //The dimmer is currently down
+            dimmers[i].data[4]--;
+            if (dimmers[i].data[4] == 0) {
+              setLevel(&dimmers[i], dimmers[i]. data[2]);
+              dimmers[i].data[4] = dimmers[i].data[0];
+            }
+          } else {
+            //Something else changed the value. Instead of breaking, just restart the process
+            dimmers[i].data[4] = 0;
+          }
+
+
+          break;
+        case 3:
+          //Sequence. data[0] on value, data[1] exit value, data[2] on time, data[3] is next in sequence, data[4] boolean for last in sequence
+          if (dimmers[i].value != dimmers[i].data[0]) {
+            setLevel(&dimmers[i], dimmers[i].data[0]);
+          }
+          if (dimmers[i].data[2] == 0) {
+            setLevel(&dimmers[i], dimmers[i].data[1]);
+            dimmers[i].function = 0;
+            if (!dimmers[i].data[4]) {
+              dimmers[dimmers[i].data[3]].function = 3;
+            }
+          } else {
+            dimmers[i].data[2]--;
+          }
+
+          break;
+        case 4:
+          //Flicker and return. data[0] is value, data[1] is time
+          if (dimmers[i].data[3] == 0) {
+            //Was just set
+            dimmers[i].data[2] = dimmers[i].value;
+            dimmers[i].data[3] = 1;
+          }
+          if (dimmers[i].value != dimmers[i].data[0]);
+          setLevel(&dimmers[i], dimmers[i].data[0]);
+          if (dimmers[i].data[1] == 0) {
+            setLevel(&dimmers[i], dimmers[i].data[2]);
+            dimmers[i].function = 0;
+          } else {
+            dimmers[i].data[1]--;
+          }
+          break;
       }
     }
   }
