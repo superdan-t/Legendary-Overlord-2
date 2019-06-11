@@ -85,7 +85,7 @@ void runDimmers(boolean forceAll) {
           if (dimmers[i].data[4] == 0) {
             //Meaning that the function was just applied
             setLevel(&dimmers[i], dimmers[i].data[2]);
-           dimmers[i].data[4] = dimmers[i].data[0];          
+            dimmers[i].data[4] = dimmers[i].data[0];
           } else if (dimmers[i].value == dimmers[i].data[2]) {
             //The dimmer is currently up
             dimmers[i].data[4]--;
@@ -98,15 +98,15 @@ void runDimmers(boolean forceAll) {
             //The dimmer is currently down
             dimmers[i].data[4]--;
             if (dimmers[i].data[4] == 0) {
-              setLevel(&dimmers[i],dimmers[i]. data[2]);
+              setLevel(&dimmers[i], dimmers[i]. data[2]);
               dimmers[i].data[4] = dimmers[i].data[0];
             }
           } else {
             //Something else changed the value. Instead of breaking, just restart the process
             dimmers[i].data[4] = 0;
           }
-          
-          
+
+
           break;
         case 3:
           //Sequence. data[0] on value, data[1] exit value, data[2] on time, data[3] is next in sequence, data[4] boolean for last in sequence
@@ -122,7 +122,7 @@ void runDimmers(boolean forceAll) {
           } else {
             dimmers[i].data[2]--;
           }
-          
+
           break;
         case 4:
           //Flicker and return. data[0] is value, data[1] is time
@@ -132,7 +132,7 @@ void runDimmers(boolean forceAll) {
             dimmers[i].data[3] = 1;
           }
           if (dimmers[i].value != dimmers[i].data[0]);
-            setLevel(&dimmers[i], dimmers[i].data[0]);
+          setLevel(&dimmers[i], dimmers[i].data[0]);
           if (dimmers[i].data[1] == 0) {
             setLevel(&dimmers[i], dimmers[i].data[2]);
             dimmers[i].function = 0;
@@ -268,24 +268,24 @@ void setDimmerProperty(Dimmer *dim, byte prop, byte value) {
    Because dimmers/values are sent in array format, they should be given to this procedure that way.
 */
 void setRemoteDimmerProperties(byte address, byte idCount, byte *dimmerIDs, byte prop, byte valueCount, byte *values) {
-  
+
   Wire.beginTransmission(address);
-  
+
   Wire.write(1);
   Wire.write(3);
   Wire.write(prop);
   Wire.write(valueCount);
   Wire.write(idCount);
-  
+
   for (byte i = 0; i < idCount; i++) {
     Wire.write(dimmerIDs[i]);
   }
   for (byte i = 0; i < valueCount; i++) {
     Wire.write(values[i]);
   }
-  
+
   Wire.endTransmission();
-  
+
 }
 
 void setRemoteDimmerProperty(byte address, byte dimmerID, byte prop, byte value) {
@@ -294,14 +294,34 @@ void setRemoteDimmerProperty(byte address, byte dimmerID, byte prop, byte value)
 
 }
 
+void setRemoteFunctions(byte address, byte idCount, byte *dimmerIDs, byte functionCount, byte *functions) {
+
+  Wire.beginTransmission(address);
+
+  Wire.write(1);
+  Wire.write(2);
+  Wire.write(idCount);
+  Wire.write(functionCount);
+
+  for (byte i = 0; i < idCount; i++) {
+    Wire.write(dimmerIDs[i]);
+  }
+  for (byte i = 0; i < functionCount; i++) {
+    Wire.write(functions[i]);
+  }
+
+  Wire.endTransmission();
+
+}
+
 void setRemoteData(byte address, byte idCount, byte *dimmerIDs, byte valueCount, byte *values) {
   Wire.beginTransmission(address);
-  
+
   Wire.write(1); //Dimmers command
   Wire.write(1); //Data subcommand
   Wire.write(idCount);
   Wire.write(valueCount);
-  
+
   for (byte i = 0; i < idCount; i++) {
     Wire.write(dimmerIDs[i]);
   }
@@ -312,7 +332,7 @@ void setRemoteData(byte address, byte idCount, byte *dimmerIDs, byte valueCount,
     Wire.write(values[i * 5 + 3]);
     Wire.write(values[i * 5 + 4]);
   }
-  
+
   Wire.endTransmission();
 }
 

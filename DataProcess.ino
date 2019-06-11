@@ -106,6 +106,9 @@ void processData(byte *buf, char inType) {
       case 1:
         setRemoteData(buf[1], buf[3], &buf[5], buf[4], &buf[5 + buf[3]]);
         break;
+      case 2:
+        setRemoteFunctions(buf[1], buf[3], &buf[5], buf[4], &buf[5 + buf[3]]);
+        break;
       case 3:
         setRemoteDimmerProperties(buf[1], buf[4], &buf[6], buf[3], buf[5], &buf[6 + buf[3]]);
         break;
