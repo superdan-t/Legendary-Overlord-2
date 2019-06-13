@@ -230,6 +230,7 @@ void loop() {
       if (alarmEnabled && now.hour() == alarmHours && now.minute() == alarmMinutes) {
 
         alarmEnabled = false;
+        EEPROM.update(m_AlarmEnabled, false);
 
         displayOn();
         lcd.setCursor(9, 1);
