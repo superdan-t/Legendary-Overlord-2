@@ -247,6 +247,7 @@ String processQuery(String query) {
       val.replace("%5C", "\\");
       val.replace("%3F", "?");
       val.replace("%2B", "+");
+      val.replace("%27", "'");
       makeNotification(val);
     } else if (var == "recomp") {
 
