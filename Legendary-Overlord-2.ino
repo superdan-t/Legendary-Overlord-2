@@ -243,6 +243,7 @@ void loop() {
         char key = keyPressed(RELEASED);
 
         while (key != '1' && millis() < stopAlarm) {
+          dimmerTick();
           if (millis() >= stopAlarm && key != '1') {
             makeNotification("Missed Alarm!");
             break;
