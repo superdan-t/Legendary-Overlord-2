@@ -85,15 +85,19 @@ void runDimmers(boolean forceAll) {
 
           break;
         case 3:
-          //Sequence. data[0] on value, data[1] exit value, data[2] on time, data[3] is next in sequence, data[4] boolean for last in sequence
+          //Sequence. data[0] on value, data[1] exit value, data[2] on time, data[3] is next in sequence + 1, since data[3] = 0 means stop
+          if (dimmers[i].data[4] == 0) {
+            dimmers[i].data[4] = dimmers[i].data[2];
+          }
           if (dimmers[i].value != dimmers[i].data[0]) {
             setLevel(&dimmers[i], dimmers[i].data[0]);
           }
           if (dimmers[i].data[2] == 0) {
+            dimmers[i].data[2] = dimmers[i].data[4];
             setLevel(&dimmers[i], dimmers[i].data[1]);
             dimmers[i].function = 0;
-            if (!dimmers[i].data[4]) {
-              dimmers[dimmers[i].data[3]].function = 3;
+            if (dimmers[i].data[3] != 0) {
+              dimmers[dimmers[i].data[3] - 1].function = 3;
             }
           } else {
             dimmers[i].data[2]--;
@@ -130,7 +134,7 @@ void initDimmers(boolean loadMem) {
     digitalWrite(dimmers[i].pin, LOW);
     pinMode(dimmers[i].pin, INPUT);
   }
-  
+
   if (loadMem) {
     for (byte i = 0; i < d_DimmerCount; i++) {
       dimmers[i].pin = EEPROM.read(EEPROM.length() - i * 2 - 1);
