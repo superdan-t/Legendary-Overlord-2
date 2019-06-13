@@ -228,7 +228,25 @@ String processQuery(String query) {
     if (var == "script") {
       runScript(val);
     } else if (var == "msg") {
+      val.replace("+", " ");
       val.replace("%20", " ");
+      val.replace("%2C", ",");
+      val.replace("%21", "!");
+      val.replace("%40", "@");
+      val.replace("%23", "#");
+      val.replace("%24", "$");
+      val.replace("%25", "%");
+      val.replace("%5E", "^");
+      val.replace("%26", "&");
+      val.replace("%28", "(");
+      val.replace("%29", ")");
+      val.replace("%3D", "=");
+      val.replace("%3A", ":");
+      val.replace("%3B", ";");
+      val.replace("%2F", "/");
+      val.replace("%5C", "\\");
+      val.replace("%3F", "?");
+      val.replace("%2B", "+");
       makeNotification(val);
     } else if (var == "recomp") {
 
