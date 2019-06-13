@@ -38,6 +38,27 @@ void updateHomeScreen() {
 
     if (timeFormat == 0) lcd.print(now.hour() > 11 ? " PM" : " AM");
 
+    //Print how many notifications. tdp can be recycled
+    tdp = "(" + String(countUnread()) + ")";
+    lcd.setCursor(16 - tdp.length(), 1);
+    lcd.print(tdp);
+
+  } else if (homeMode >= 1 && homeMode <= 5) {
+
+    //Display the most recent notification
+    if (homeMode == 5) {
+      lcd.clear();
+      lcd.print(getNotification(countNotifications() - 1, 0));
+      if (countLinesInNotification(countNotifications() - 1) > 1) {
+        lcd.setCursor(0, 1);
+        lcd.print(getNotification(countNotifications() - 1, 1));
+      }
+    }
+
+    homeMode--;
+
+    if (homeMode == 0) updateHomeScreen();
+
   }
 
 }
@@ -123,6 +144,7 @@ void cmdInterface() {
 
     while (sustain) {
 
+      dimmerTick();
 
       byte selection = lcdSelector(dmItems, itemCount);
 
@@ -135,6 +157,8 @@ void cmdInterface() {
         temp = getDimmerProperty(editType == 1 ? &dimmers[targetDimmer] : &remoteDimmer, selection == 1 ? d_Method : d_Pin); //The initial value that needs editing
 
         while (sustain == true) {
+
+          dimmerTick();
 
           //Launch a value editor for method or pin. Second ternary determines max value (15 for Method or 255 for Pin), while the third determines arrow state (down only for Method, both for Pin)
           byte exitState = lcdEditValue(selection == 1 ? "Method" : "Pin", &temp, 0, selection == 1 ? 15 : 255, selection == 1 ? 1 : 3);
@@ -197,6 +221,8 @@ void cmdInterface() {
     boolean sustain = true;
 
     while (sustain) {
+
+      dimmerTick();
 
       now = rtc.now();
 
@@ -282,6 +308,8 @@ void cmdInterface() {
     const char *nMenuItems[] = {"IP Address:", "UDP Port:"};
 
     while (sustain && timeout > 0) {
+
+      dimmerTick();
 
       char key = keyPressed(RELEASED);
 
@@ -476,6 +504,8 @@ void cmdInterface() {
 
     while (sustain) {
 
+      dimmerTick();
+
       if (index == 0) {
 
         val = timeoutDuration;
@@ -520,6 +550,8 @@ void cmdInterface() {
         boolean reprint = true;
 
         while (sustain) {
+
+          dimmerTick();
 
           if (reprint) {
             lcd.clear();
@@ -597,6 +629,8 @@ byte lcdEditValue(char *valName, unsigned int *value, unsigned int minValue, uns
   }
 
   while (timeout > 0) {
+
+    dimmerTick();
 
     if (reprint) {
 
@@ -777,6 +811,8 @@ byte lcdSelector(String *items, byte itemCount, byte startIndex) {
 
   while (timeout > 0) {
 
+    dimmerTick();
+
     if (reprint) {
 
       lcd.clear();
@@ -843,6 +879,7 @@ boolean lcdConfirm(char *prompt) {
   lcd.setCursor(0, 1);
   lcd.print("(1) Yes   (2) No");
   while (true) {
+    dimmerTick();
     char key = keyPressed(RELEASED);
     if (key == '1') {
       return true;
@@ -858,10 +895,14 @@ void sendTimeUpdate() {
   Serial1.write(3); //Message size
   Serial1.write(5); //Update time display
   if (timeFormat == 0) {
-    Serial1.write(now.hour() > 12 ? now.hour() - 12 : now.hour());
+    if (now.hour() == 0) {
+      Serial1.write(12);
+    } else {
+      Serial1.write(now.hour() > 12 ? now.hour() - 12 : now.hour());
+    }
   } else {
     Serial1.write(now.hour());
   }
   Serial1.write(now.minute());
-  
+
 }

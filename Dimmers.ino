@@ -1,3 +1,10 @@
+void dimmerTick() {
+  if (millis() >= nextDimmerTick) {
+    nextDimmerTick = millis() + 50;
+    runDimmers(false);
+  }
+}
+
 /**
    Sets the output level of the specified dimmer. Accepts dimmer struct, not an index.
 */
@@ -42,6 +49,48 @@ void setRemoteLevels(byte address, byte dimCount, byte *dimmerIDs, byte valueCou
 
 void setRemoteLevel(byte address, byte dimmerID, byte value) {
   setRemoteLevels(address, 1, &dimmerID, 1, &value);
+}
+
+byte getRemoteLevel(byte address, byte dimmerID) {
+
+  Wire.beginTransmission(address);
+  Wire.write(2); //Put values in reply buffer
+  Wire.write(0); //Level sub-command
+  Wire.write(1); //1 dimmer ID
+  Wire.write(dimmerID);
+  Wire.endTransmission();
+
+  delay(10); //Give time to process
+
+  Wire.requestFrom(address, 1); //Only a single byte coming back
+
+  unsigned long stopListening = millis() + 10;
+
+  while (Wire.available() == 0 && millis() < stopListening); //Wait until there is a reply
+
+  return Wire.read(); //It was only 1 byte coming back. No need for anything complicated.
+
+}
+
+byte getRemoteFunction(byte address, byte dimmerID) {
+
+  Wire.beginTransmission(address);
+  Wire.write(2); //Put values in reply buffer
+  Wire.write(2); //Function sub-command
+  Wire.write(1); //1 dimmer ID
+  Wire.write(dimmerID);
+  Wire.endTransmission();
+
+  delay(10); //Give time to process
+
+  Wire.requestFrom(address, 1); //Only a single byte coming back
+
+  unsigned long stopListening = millis() + 10;
+
+  while (Wire.available() == 0 && millis() < stopListening); //Wait until there is a reply
+
+  return Wire.read(); //It was only 1 byte coming back. No need for anything complicated.
+
 }
 
 /**

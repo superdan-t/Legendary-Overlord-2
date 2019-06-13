@@ -1,3 +1,438 @@
+unsigned int countNotifications() {
+
+  File messages = SD.open("LEGO/sys/msgs.lxt", FILE_READ);
+
+  if (!messages) return 0;
+
+  return (unsigned int)messages.read() * (unsigned int)256 + (unsigned int)messages.read();
+
+}
+
+unsigned int countUnread() {
+
+  File messages = SD.open("LEGO/sys/msgs.lxt", FILE_READ);
+
+  if (!messages) return 0;
+
+  messages.seek(2);
+
+  return (unsigned int)messages.read() * (unsigned int)256 + (unsigned int)messages.read();
+
+}
+
+void makeNotification(String message) {
+
+  File messages;
+
+  if (!SD.exists("LEGO/sys/msgs.lxt")) {
+    //Setup the file for the first time
+    messages = SD.open("LEGO/sys/msgs.lxt", FILE_WRITE);
+
+    //There are 0 messages to start.
+    messages.write((byte)0);
+    messages.write((byte)0);
+
+    //There are 0 unread messages to start.
+    messages.write((byte)0);
+    messages.write((byte)0);
+
+  } else {
+    messages = SD.open("LEGO/sys/msgs.lxt", FILE_WRITE);
+  }
+
+  //Increment the number of messages at the top of the file
+  messages.seek(0);
+  byte count[2] = {messages.read(), messages.read()};
+  if (count[1] != 255) {
+    count[1]++;
+    messages.seek(1);
+    messages.write(count[1]);
+  } else {
+    count[0]++;
+    count[1] = 0;
+    messages.seek(0);
+    messages.write(count[0]);
+    messages.write(count[1]);
+  }
+
+  //Increment the number of unread messages at the top of the file
+  messages.seek(2);
+  byte unreads[2] = {messages.read(), messages.read()};
+  if (unreads[1] != 255) {
+    unreads[1]++;
+    messages.seek(3);
+    messages.write(unreads[1]);
+  } else {
+    unreads[0]++;
+    unreads[1] = 0;
+    messages.seek(2);
+    messages.write(unreads[0]);
+    messages.write(unreads[1]);
+  }
+
+  messages.seek(messages.size()); //Go to the end because we are appending
+  messages.write((byte)0); //Mark this one as unread
+  messages.println(message);
+
+  messages.close();
+
+  timeout = timeoutDuration;
+  displayOn();
+  homeMode = 5;
+  updateHomeScreen();
+
+}
+
+byte countLinesInNotification(unsigned int index) {
+
+  File messages = SD.open("LEGO/sys/msgs.lxt", FILE_READ);
+
+  if (!messages) return 0;
+
+  messages.seek(4);
+
+  unsigned int currentIndex = 0;
+
+  char c;
+
+  while (messages.available()) {
+
+    if (currentIndex == index) {
+      //Found the message we are looking for
+      unsigned int msgLength = 0;
+
+      messages.read(); //There is always a char signaling read/unread
+
+      c = messages.read();
+
+      while (c != '\n' && c != '\r' && messages.available()) {
+        msgLength++;
+        c = messages.read();
+      }
+
+      messages.close();
+
+      return msgLength / 15 + (msgLength % 15 == 0 ? 0 : 1);
+
+    }
+
+    c = messages.read();
+
+    if (c == '\n') {
+      currentIndex++;
+    }
+
+  }
+
+  return 0;
+
+}
+
+String getNotification(unsigned int index, byte line) {
+  File messages = SD.open("LEGO/sys/msgs.lxt", FILE_READ);
+
+  if (!messages) return "";
+
+  messages.seek(4);
+
+  unsigned int currentIndex = 0;
+
+  char c;
+
+  while (messages.available()) {
+
+    if (currentIndex == index) {
+      //Found the message we are looking for
+
+      messages.read(); //There is always a char signaling read/unread
+
+      messages.seek(messages.position() + line * 15); //Seek the line we want
+
+      String thisLine = "";
+
+
+      c = messages.read();
+
+      while (c != '\r' && thisLine.length() < 15 && messages.available()) {
+        thisLine += c;
+        c = messages.read();
+      }
+
+      messages.close();
+
+      return thisLine;
+
+    }
+
+    c = messages.read();
+
+    if (c == '\n') {
+      currentIndex++;
+    }
+
+  }
+}
+
+void markNotificationRead(unsigned int index) {
+  File messages = SD.open("LEGO/sys/msgs.lxt", FILE_WRITE);
+
+  if (!messages) return;
+
+  messages.seek(4);
+
+  unsigned int currentIndex = 0;
+
+  char c;
+
+  while (messages.available()) {
+
+    if (currentIndex == index) {
+      //Found the message we are looking for
+
+      if (messages.read() == 1) {
+        return;
+      } else {
+        messages.seek(messages.position() - 1);
+      }
+
+      messages.write((byte)1);
+
+      //Decrement the number of unread messages at the top of the file
+      messages.seek(2);
+      byte unreads[2] = {messages.read(), messages.read()};
+      if (unreads[1] != 0) {
+        unreads[1]--;
+        messages.seek(3);
+        messages.write(unreads[1]);
+      } else {
+        unreads[0]--;
+        unreads[1] = 255;
+        messages.seek(2);
+        messages.write(unreads[0]);
+        messages.write(unreads[1]);
+      }
+
+      messages.close();
+
+      return;
+
+    }
+
+    c = messages.read();
+
+    if (c == '\n') {
+      currentIndex++;
+    }
+
+  }
+}
+
+void deleteNotification(unsigned int index) {
+
+  if (countNotifications() <= index) {
+    return;
+  }
+
+  if (!SD.exists("LEGO/sys/msgs.lxt")) return;
+
+  File messages = SD.open("LEGO/sys/msgs.lxt", FILE_WRITE);
+  File messagesTemp = SD.open("LEGO/sys/temp.lxt", FILE_WRITE);
+
+  //Decrement the number of messages at the top of the file
+  messages.seek(0);
+  byte count[2] = {messages.read(), messages.read()};
+  if (count[1] != 0) {
+    count[1]--;
+    messages.seek(1);
+    messages.write(count[1]);
+  } else {
+    count[0]--;
+    count[1] = 255;
+    messages.seek(0);
+    messages.write(count[0]);
+    messages.write(count[1]);
+  }
+
+  if (count[0] * 256 + count[1] == 0) {
+    messages.close();
+    messagesTemp.close();
+    SD.remove("LEGO/sys/msgs.lxt");
+    SD.remove("LEGO/sys/temp.lxt");
+    return;
+  }
+
+  messages.close();
+  messages = SD.open("LEGO/sys/msgs.lxt", FILE_READ);
+
+  //Print everything to the temporary file
+  while (messages.available()) {
+    messagesTemp.write(messages.read());
+  }
+
+  messages.close();
+  messagesTemp.close();
+
+  SD.remove("LEGO/sys/msgs.lxt");
+
+  messagesTemp = SD.open("LEGO/sys/temp.lxt", FILE_READ);
+  messages = SD.open("LEGO/sys/msgs.lxt", FILE_WRITE);
+
+  messages.seek(4);
+
+  unsigned int currentIndex = 0;
+  char c;
+  while (messagesTemp.available()) {
+
+    if (currentIndex == index) {
+      //Found the message we are looking for
+
+      if (messagesTemp.read() == 0) {
+        //If the message is still unread
+        
+        //Decrement the number of unread messages at the top of the file
+        messages.seek(2);
+        byte unreads[2] = {messages.read(), messages.read()};
+        if (unreads[1] != 0) {
+          unreads[1]--;
+          messages.seek(3);
+          messages.write(unreads[1]);
+        } else {
+          unreads[0]--;
+          unreads[1] = 255;
+          messages.seek(2);
+          messages.write(unreads[0]);
+          messages.write(unreads[1]);
+        }
+        messages.seek(messages.size());
+      }
+
+
+      //Ignore the message
+      while (messagesTemp.available() && messagesTemp.read() != '\n');
+
+      //Only return if the end has been reached, otherwise continue copying
+      if (!messagesTemp.available()) {
+        messages.close();
+        messagesTemp.close();
+        SD.remove("LEGO/sys/temp.lxt");
+        return;
+      }
+
+      currentIndex++;
+
+    }
+
+    c = messagesTemp.read();
+
+    messages.write(c);
+
+    if (c == '\n') {
+      currentIndex++;
+    }
+
+  }
+
+  messages.close();
+  messagesTemp.close();
+  SD.remove("LEGO/sys/temp.lxt");
+  return;
+
+}
+
+void displayNotifications() {
+
+  timeout = timeoutDuration;
+
+  if (countNotifications() == 0) return;
+
+  lcd.clear();
+
+  char c = ' ';
+  char k = ' ';
+
+  unsigned int displayedNotification = countNotifications() - 1;
+  byte startLine = 0;
+  byte totalLines = countLinesInNotification(displayedNotification);
+  boolean reprint = true;
+
+  if (countNotifications() == 0) {
+    lcd.print("None");
+  }
+
+  while (timeout != 0 && c != b_DEL) {
+
+    c = keyPressed(RELEASED);
+    k = keyPressed(HOLD);
+
+    boolean canScrollUp = startLine != 0;
+    boolean canScrollDown = startLine + 2 < totalLines;
+
+    if (reprint) {
+      //Do the printing
+      markNotificationRead(displayedNotification);
+      lcd.clear();
+      lcd.print(getNotification(displayedNotification, startLine));
+      if (canScrollUp) {
+        lcd.setCursor(15, 0);
+        lcd.print(char(0));
+      }
+      lcd.setCursor(0, 1);
+      if (startLine + 1 < totalLines) {
+        lcd.print(getNotification(displayedNotification, startLine + 1));
+      }
+      if (canScrollDown) {
+        lcd.setCursor(15, 1);
+        lcd.print(char(1));
+      }
+      reprint = false;
+    }
+
+    switch (k) {
+      case b_DEL:
+        lcd.clear();
+        lcd.print("Deleting...");
+        deleteNotification(displayedNotification);
+        lcd.clear();
+        lcd.print("Deleted.");
+        longPause(2000);
+        break;
+    }
+
+    switch (c) {
+      case b_Up:
+        if (canScrollUp) {
+          startLine--;
+          reprint = true;
+        }
+        break;
+      case b_Down:
+        if (canScrollDown) {
+          startLine++;
+          reprint = true;
+        }
+        break;
+      case b_GO:
+        if (displayedNotification > 0) {
+          displayedNotification--;
+          startLine = 0;
+          totalLines = countLinesInNotification(displayedNotification);
+          reprint = true;
+        }
+        break;
+      case '/':
+        if (displayedNotification < countNotifications() - 1) {
+          displayedNotification++;
+          startLine = 0;
+          totalLines = countLinesInNotification(displayedNotification);
+          reprint = true;
+        }
+        break;
+    }
+
+  }
+
+}
+
 void runScript(String scriptName) {
   //DEBUG//DEBUG/Serial.println("Running " + scriptName);
 
@@ -42,6 +477,8 @@ void runScript(String scriptName) {
       lineIndex++;
 
     }
+
+    dimmerTick();
 
   }
 
@@ -139,7 +576,7 @@ void compileScript(String scriptName) {
           compileError = true;
         }
       }
-      
+
       //DEBUG/Serial.println("Writing lists portion.");
 
       //Next is how many dimmers are supplied
@@ -194,12 +631,12 @@ void compileScript(String scriptName) {
 
     currentLine = "";
     lineEndReached = false;
-    
+
   }
 
   compiledScript.close();
   uncompiledScript.close();
-  
+
 }
 
 //void compileScriptOld(String scriptName) {

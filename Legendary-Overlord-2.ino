@@ -32,6 +32,9 @@
 #define m_DisplayTimeout 7 //Ideally this would be 6 but cell 6 on my board is cranky and stuck on 255
 #define m_TimeFormat 8 //See ↑↑↑
 #define m_I2CDisplay 9
+#define m_AlarmEnabled 10
+#define m_AlarmMinutes 11
+#define m_AlarmHours 12
 
 #define l_scrollUp 1
 #define l_scrollDown 2
@@ -74,6 +77,9 @@ RTC_DS3231 rtc;
 const String daysOfTheWeek[7] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 const String daysOfTheWeekShort[7] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 DateTime now;
+byte alarmMinutes;
+byte alarmHours;
+boolean alarmEnabled = false;
 
 //Ethernet
 const byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0x91, 0x39};
@@ -93,6 +99,8 @@ byte serialLength = 0;
 byte serial1Index = 0;
 byte serial1Length = 0;
 byte serial1Buffer[50];
+
+byte notificationCount = 0;
 
 //Display
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
@@ -178,6 +186,9 @@ void setup() {
   ip[1] = EEPROM.read(m_IPAddr + 1);
   ip[2] = EEPROM.read(m_IPAddr + 2);
   ip[3] = EEPROM.read(m_IPAddr + 3);
+  alarmEnabled = EEPROM.read(m_AlarmEnabled);
+  alarmMinutes = EEPROM.read(m_AlarmMinutes);
+  alarmHours = EEPROM.read(m_AlarmHours);
 
 
   timeout = timeoutDuration;
@@ -193,11 +204,7 @@ void setup() {
 
 void loop() {
 
-  if (millis() >= nextDimmerTick) {
-    nextDimmerTick = millis() + 50;
-    runDimmers(false);
-  }
-
+  dimmerTick();
 
   //Run every second
   if (millis() >= nextSecond) {
@@ -206,15 +213,46 @@ void loop() {
       if (timeout == 0) {
         displayOff();
       }
+      if (homeMode >= 1 && homeMode <= 5) {
+        updateHomeScreen();
+      }
     }
 
     //Has the time changed?
     if (rtc.now().minute() != now.minute()) {
       now = rtc.now();
-      updateHomeScreen();
 
-      
+      if (homeMode == 0) updateHomeScreen();
+
+
       sendTimeUpdate();
+
+      if (alarmEnabled && now.hour() == alarmHours && now.minute() == alarmMinutes) {
+
+        alarmEnabled = false;
+
+        displayOn();
+        lcd.setCursor(9, 1);
+        lcd.print("(1)STOP");
+
+        runScript("alarm");
+
+        unsigned long stopAlarm = millis() + 60000;
+
+        char key = keyPressed(RELEASED);
+
+        while (key != '1' && millis() < stopAlarm) {
+          if (millis() >= stopAlarm && key != '1') {
+            makeNotification("Missed Alarm!");
+            break;
+          }
+          key = keyPressed(RELEASED);
+        }
+
+        runScript("alrmStp"); //Should reverse whatever is done by the "alarm" script
+
+
+      }
 
 
     } else {
@@ -288,31 +326,25 @@ boolean pinIsValid(byte pin) {
    A short pause keeps the dimmer functions running but maintains nothing else.
    Useful for very short pauses where the full loop could cause too long delays, but the dimmers should be kept running.
 */
-void shortPause(long duration) {
+void shortPause(unsigned long duration) {
   duration = millis() + duration;
   while (millis() < duration) {
-    if (millis() >= nextDimmerTick) {
-      nextDimmerTick = millis() + 50;
-      runDimmers(false);
-    }
+    dimmerTick();
   }
 }
 
 /**
    Useful for longer pauses when device functionality needs to be maintained, like when running a UI
 */
-void longPause(long duration) {
+void longPause(unsigned long duration) {
   duration = millis() + duration;
   while (millis() < duration) {
-    if (millis() >= nextDimmerTick) {
-      nextDimmerTick = millis() + 50;
-      runDimmers(false);
-    }
+    dimmerTick();
 
-    if (millis() >= nextSecond) {
-      updateHomeScreen();
-      nextSecond = millis() + 1000;
-    }
+//    if (millis() >= nextSecond) {
+//      updateHomeScreen();
+//      nextSecond = millis() + 1000;
+//    }
 
     checkSocket();
   }

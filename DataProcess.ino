@@ -216,6 +216,42 @@ void processData(byte *buf, char inType) {
       shortPause(buf[1] * 100);
     }
 
+  } else if (buf[0] == 10) {
+    //Get remote dimmer values
+    //Put dimmer values in the reply buffer. buf[1] = address, buf[2] = value to get, buf[3] = count of dimmers, buf[4] = property FOR GET PROPERTIES ONLY, lists...
+    for (byte i = 0; i < buf[3]; i++) {
+      switch (buf[2]) {
+        case 0:
+          replyBuffer[i] = getRemoteLevel(buf[1], buf[4 + i]);
+          replySize++;
+          break;
+        case 1:
+          //Unimplemented
+          break;
+        case 2:
+          replyBuffer[i] = getRemoteFunction(buf[1], buf[4 + i]);
+          replySize++;
+          break;
+        case 3:
+          replyBuffer[i] = getRemoteDimmerProperty(buf[1], buf[5 + i], buf[4]);
+          replySize++;
+          break;
+      }
+    }
+  } else if (buf[0] == 11) {
+    //Set alarm
+    alarmEnabled = true;
+    alarmHours = buf[1];
+    alarmMinutes = buf[2];
+  } else if (buf[0] == 12) {
+    //Get alarm
+    replyBuffer[0] = alarmEnabled;
+    replyBuffer[1] = alarmHours;
+    replyBuffer[2] = alarmMinutes;
+    replySize = 3;
+  } else if (buf[0] == 13) {
+    //Disable alarm
+    alarmEnabled = false;
   }
 
 }
