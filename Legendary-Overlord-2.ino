@@ -190,6 +190,9 @@ void setup() {
   alarmMinutes = EEPROM.read(m_AlarmMinutes);
   alarmHours = EEPROM.read(m_AlarmHours);
 
+  if (timeoutDuration == 0) {
+    timeoutDuration = 60;
+  }
 
   timeout = timeoutDuration;
   now = rtc.now();
