@@ -16,7 +16,7 @@ void processData(byte *buf, char inType) {
           if (buf[2] <= buf[3] || i < buf[3]) {
             setLevel(&dimmers[buf[4 + i]], buf[4 + buf[2] + i]);
           } else {
-            setLevel(&dimmers[buf[4 + i]], buf[3 + buf[2] + buf[3]]);
+            setLevel(&dimmers2[buf[4 + i]], buf[3 + buf[2] + buf[3]]);
           }
           break;
         case 1:
@@ -24,8 +24,8 @@ void processData(byte *buf, char inType) {
           if (buf[2] <= buf[3] || i < buf[3]) {
             dimmers[buf[4 + i]].data[0] = buf[4 + buf[2] + i * 5];
             dimmers[buf[4 + i]].data[1] = buf[5 + buf[2] + i * 5];
-            dimmers[buf[4 + i]].data[2] = buf[6 + buf[2] + i * 5];
-            dimmers[buf[4 + i]].data[3] = buf[7 + buf[2] + i * 5];
+            dimmers3[buf[4 + i]].data[2] = buf[6 + buf[2] + i * 5];
+            dimmers4[buf[4 + i]].data[3] = buf[7 + buf[2] + i * 5];
             dimmers[buf[4 + i]].data[4] = buf[8 + buf[2] + i * 5];
           } else if (buf[2] > buf[3] && buf[3] != 0) {
             dimmers[buf[4 + i]].data[0] = buf[4 + buf[2] + (buf[3] - 1) * 5];

@@ -11,24 +11,17 @@
 #define SERIAL_MAX_SIZE 50
 
 #define DATA_PIN 3
-#define STRIP_LEN 150
 #define XMAS_LEN 50
-#define NUM_LEDS XMAS_LEN + STRIP_LEN
+#define XMAS_START 150
+#define STRIP_LEN 150
+#define STRIP_START 0
+#define TOTAL_LEN STRIP_LEN + XMAS_LEN
 
 #define E_FILL 1
 
-CRGB leds[NUM_LEDS];
+CRGB leds[TOTAL_LEN];
 
-struct Color {
-  byte red = 0;
-  byte green = 0;
-  byte blue = 0;
-};
-
-struct Preset {
-  Color color[150];
-};
-Preset rainbow;
+byte effectSpeed;
 
 byte xmasEffect = 0;
 byte stripEffect = 0;
@@ -36,20 +29,57 @@ byte stripEffect = 0;
 byte serialBuf[SERIAL_MAX_SIZE];
 byte serialIndex = 0;
 
+typedef struct EffectController {
+  CRGB (*generator)(byte, byte);
+  bool (*effect)(EffectController*);
+  unsigned long nextTick;
+  byte data[10];
+  byte threadID;
+};
+
+//This replaces 16 booleans. Use bitwise operations to access
+unsigned int effectThreadStates = 0;
+
+EffectController effectThreads[16];
+
 void setup() {
 
   Serial.begin(115200);
 
   //FastLED Setup
-  LEDS.addLeds<WS2811,DATA_PIN,RGB>(leds,XMAS_LEN);
-  LEDS.addLeds<WS2812,DATA_PIN,GRB>(&leds[XMAS_LEN], STRIP_LEN);
-  LEDS.setBrightness(84);
+  LEDS.addLeds<WS2812, DATA_PIN, GRB>(&leds[STRIP_START], STRIP_LEN);
+  LEDS.addLeds<WS2811, DATA_PIN, RGB>(&leds[XMAS_START], XMAS_LEN);
+  LEDS.setBrightness(255);
 
-  makeRainbow(&rainbow);
-  
-  fillEffect(&rainbow, 5, 10);
+  for (byte i = 0; i < TOTAL_LEN; i++) {
+    leds[i] = getSpectrum(i, TOTAL_LEN);
+  }
+  FastLED.show();
+
+  delay(1000);
+  while (true) {
+    shiftDown(0, TOTAL_LEN - 1);
+    FastLED.show();
+    delay(10);
+  }
+
+  //  EffectController myNewEffect;
+  //  myNewEffect.generator = &getSpectrum;
+  //  myNewEffect.effect = &mySampleEffect;
+  //  myNewEffect.data[0] = 0;
+  //  myNewEffect.threadID = 200;
+  //
+  //  Serial.println(registerEffect(&myNewEffect));
+  //
+  //  myNewEffect.effect = &shiftForever;
+  //  myNewEffect.threadID = 202;
+
+  //Serial.println(registerEffect(&myNewEffect));
+
 }
 
 void loop() {
+
+  runEffectThreads();
 
 }

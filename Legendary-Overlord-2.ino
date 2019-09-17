@@ -19,7 +19,7 @@
 #include <SPI.h>
 #include <Wire.h>
 
-#define d_DimmerCount 50
+#define d_DimmerCount 999
 
 #define d_Pin 0
 #define d_Enabled 1
@@ -148,6 +148,9 @@ struct Dimmer {
 unsigned long nextDimmerTick;
 unsigned long nextSecond;
 Dimmer dimmers[d_DimmerCount];
+Dimmer dimmers2[d_DimmerCount];
+Dimmer dimmers3[d_DimmerCount];
+Dimmer dimmers4[d_DimmerCount];
 
 boolean sdPresent = false;
 
