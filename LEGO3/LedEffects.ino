@@ -1,7 +1,7 @@
 //Static effect, no thread
 void shiftDown(byte lowerBound, byte upperBound) {
   CRGB swap = leds[lowerBound];
-  for (byte i = lowerBound; i < upperBound - lowerBound - 1; i++) {
+  for (byte i = lowerBound; i < upperBound; i++) {
     leds[i] = leds[i + 1];
 //    Serial.print(i);
 //    Serial.print(" gets the value of ");
@@ -25,7 +25,7 @@ void shiftUp(byte lowerBound, byte upperBound) {
 bool shiftForever(EffectController *ec) {
   if (millis() >= ec->nextTick) {
     ec->nextTick = millis() + 100;
-    shiftDown(0, TOTAL_LEN);
+    shiftDown(0, TOTAL_LEN - 1);
     FastLED.show();
   }
 }
