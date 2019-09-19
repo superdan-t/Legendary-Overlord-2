@@ -15,11 +15,27 @@ byte interpret(byte buf[], byte replyBuf[], byte *replySize, byte maxSize) {
       *replySize = 3;
       break;
     case 2:
-    
+      replyBuf[0] = FastLED.getBrightness();
+      *replySize = 1;
+      break;
+    case 3:
+      //Set the brightness
+      FastLED.setBrightness(buf[1]);
+      break;
+    case 4:
+      //Kill all effect threads
+      for (byte i = 0; i < 16; i++) {
+        killEffectThread(i);
+      }
+      break;
+   case 5:
+      //Kill effect thread with ID
+      killEffectWithID(buf[1]);
+      break;
     default:
       return 1;
-
   }
+  return 0;
 }
 
 void serialEvent() {

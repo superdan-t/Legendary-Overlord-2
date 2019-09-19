@@ -52,29 +52,24 @@ void setup() {
   LEDS.setBrightness(255);
 
   for (byte i = 0; i < TOTAL_LEN; i++) {
-    leds[i] = getSpectrum(i, TOTAL_LEN);
+    leds[i] = getPatriotic(i, TOTAL_LEN);
   }
+
   FastLED.show();
+  while (true);
 
-  delay(1000);
-  while (true) {
-    shiftDown(0, TOTAL_LEN - 1);
-    FastLED.show();
-    delay(10);
-  }
-
-  //  EffectController myNewEffect;
-  //  myNewEffect.generator = &getSpectrum;
-  //  myNewEffect.effect = &mySampleEffect;
-  //  myNewEffect.data[0] = 0;
-  //  myNewEffect.threadID = 200;
-  //
-  //  Serial.println(registerEffect(&myNewEffect));
-  //
-  //  myNewEffect.effect = &shiftForever;
-  //  myNewEffect.threadID = 202;
-
-  //Serial.println(registerEffect(&myNewEffect));
+//  EffectController myNewEffect;
+//  myNewEffect.generator = &getPatriotic;
+//  myNewEffect.effect = &mySampleEffect;
+//  myNewEffect.data[0] = 0;
+//  myNewEffect.threadID = 200;
+//
+//  Serial.println(registerEffect(&myNewEffect));
+//
+//  myNewEffect.effect = &shiftForever;
+//  myNewEffect.threadID = 202;
+//
+//  Serial.println(registerEffect(&myNewEffect));
 
 }
 

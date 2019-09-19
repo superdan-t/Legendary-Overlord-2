@@ -3,14 +3,8 @@ void shiftDown(byte lowerBound, byte upperBound) {
   CRGB swap = leds[lowerBound];
   for (byte i = lowerBound; i < upperBound; i++) {
     leds[i] = leds[i + 1];
-//    Serial.print(i);
-//    Serial.print(" gets the value of ");
-//    Serial.println(i + 1);
   }
   leds[upperBound] = swap;
-//  Serial.print(upperBound);
-//  Serial.print(" gets the value of ");
-//  Serial.println(lowerBound);
 }
 
 void shiftUp(byte lowerBound, byte upperBound) {
@@ -28,6 +22,7 @@ bool shiftForever(EffectController *ec) {
     shiftDown(0, TOTAL_LEN - 1);
     FastLED.show();
   }
+  return false;
 }
 
 
