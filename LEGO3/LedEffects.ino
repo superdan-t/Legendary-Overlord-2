@@ -1,3 +1,16 @@
+effect getEffectWithID(byte id) {
+  switch (id) {
+    case 1:
+      return shiftForever;
+    case 2:
+      return mySampleEffect;
+    case 3:
+      return strobe;
+    default:
+      return shiftForever;
+  }
+}
+
 //Static effect, no thread
 void shiftDown(byte lowerBound, byte upperBound) {
   CRGB swap = leds[lowerBound];
@@ -18,13 +31,36 @@ void shiftUp(byte lowerBound, byte upperBound) {
 //There's no going back. Unless you kill this thread that is
 bool shiftForever(EffectController *ec) {
   if (millis() >= ec->nextTick) {
-    ec->nextTick = millis() + 100;
-    shiftDown(0, TOTAL_LEN - 1);
+    ec->nextTick = millis() + ec->data[0];
+    if (ec->data[1]) {
+      shiftDown(0, TOTAL_LEN - 1);
+    } else {
+      shiftUp(0, TOTAL_LEN - 1);
+    }
     FastLED.show();
   }
   return false;
 }
 
+bool strobe(EffectController *ec) {
+  if (millis() >= ec->nextTick) {
+    if (ec->data[2]) {
+      ec->nextTick = millis() + ec->data[0];
+      for (byte i = ec->effectStart; i < ec->effectEnd; i++) {
+        leds[i] = CRGB(0, 0, 0);
+      }
+      ec->data[2] = false;
+    } else {
+      ec->nextTick = millis() + ec->data[1];
+      for (byte i = ec->effectStart; i < ec->effectEnd; i++) {
+        leds[i] = ec->generator(i - ec->effectStart, ec->effectEnd - ec->effectStart);
+      }
+      ec->data[2] = true;
+    }
+    FastLED.show();
+  }
+  return false;
+}
 
 //Works as a thread
 bool mySampleEffect(EffectController *ec) {

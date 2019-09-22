@@ -1,12 +1,18 @@
-CRGB (*getGeneratorWithID(byte id)) (byte, byte) {
+generator getGeneratorWithID(byte id) {
   switch (id) {
     case 1:
       return getSpectrum;
     case 2:
       return getPatriotic;
+    case 3:
+      return testLing;
     default:
       return getCurrentColors;
   }
+}
+
+CRGB testLing(byte position, byte length) {
+  return CRGB(50, 150, 255);
 }
 
 //Uses length to find the RGB value of a certain LED that falls within that spectrum

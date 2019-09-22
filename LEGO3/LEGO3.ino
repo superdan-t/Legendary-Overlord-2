@@ -1,9 +1,13 @@
 #include <Dimmers.h>
+#include <EEPROM.h>
+#include <Ethernet.h>
 #include <FastLED.h>
 
 #define VER_MAJOR 3
 #define VER_MINOR 0
 #define VER_PATCH 0
+
+#define ADDR_ETH 0
 
 #define EOT 4
 #define DLE 16
@@ -21,21 +25,24 @@
 
 CRGB leds[TOTAL_LEN];
 
-byte effectSpeed;
-
-byte xmasEffect = 0;
-byte stripEffect = 0;
+byte statics[5][3];
 
 byte serialBuf[SERIAL_MAX_SIZE];
 byte serialIndex = 0;
 
-typedef struct EffectController {
+struct EffectController {
   CRGB (*generator)(byte, byte);
   bool (*effect)(EffectController*);
   unsigned long nextTick;
-  byte data[10];
+  byte effectStart;
+  byte effectEnd;
+  byte data[8];
   byte threadID;
 };
+
+typedef bool (*effect)(EffectController*);
+
+typedef CRGB (*generator)(byte, byte);
 
 //This replaces 16 booleans. Use bitwise operations to access
 unsigned int effectThreadStates = 0;
@@ -52,29 +59,23 @@ void setup() {
   LEDS.setBrightness(255);
 
   for (byte i = 0; i < TOTAL_LEN; i++) {
-    leds[i] = getPatriotic(i, TOTAL_LEN);
+    leds[i] = CRGB(0, 0, 0);
   }
 
   FastLED.show();
-  while (true);
-
+//
 //  EffectController myNewEffect;
-//  myNewEffect.generator = &getPatriotic;
-//  myNewEffect.effect = &mySampleEffect;
+//  myNewEffect.generator = &getSpectrum;
 //  myNewEffect.data[0] = 0;
-//  myNewEffect.threadID = 200;
-//
-//  Serial.println(registerEffect(&myNewEffect));
-//
 //  myNewEffect.effect = &shiftForever;
 //  myNewEffect.threadID = 202;
-//
-//  Serial.println(registerEffect(&myNewEffect));
+//  registerEffect(&myNewEffect);
 
 }
 
 void loop() {
 
   runEffectThreads();
+  checkSerial();
 
 }
