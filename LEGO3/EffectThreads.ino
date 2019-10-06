@@ -38,7 +38,7 @@ void runEffectThreads() {
   for (byte i = 0; i < 16; i++) {
     //The effect will return "true" if it has finished, signaling to kill the thread
     if (((~effectThreadStates) | 1 << i) & effectThreadStates) {
-    if (effectThreads[i].effect(&effectThreads[i])) {
+      if (effectThreads[i].effect(&effectThreads[i])) {
         killEffectThread(i);
       }
     }
