@@ -1,13 +1,16 @@
 #include <Dimmers.h>
 #include <EEPROM.h>
 #include <Ethernet.h>
+#include <EthernetUdp.h>
 #include <FastLED.h>
+#include <SD.h>
 
 #define VER_MAJOR 3
 #define VER_MINOR 0
 #define VER_PATCH 0
 
 #define ADDR_ETH 0
+#define ADDR_UDP 4
 
 #define EOT 4
 #define DLE 16
@@ -23,12 +26,24 @@
 
 #define E_FILL 1
 
-CRGB leds[TOTAL_LEN];
+const byte mac[] = {0xDE, 0xAD, 0xBE, 0xA8, 0x5C, 0x7B};
 
-byte statics[5][3];
+EthernetServer webserver(80);
+EthernetUDP socket;
+
+bool sdActive;
+
+byte replyBuf[SERIAL_MAX_SIZE > UDP_TX_PACKET_MAX_SIZE ? SERIAL_MAX_SIZE : UDP_TX_PACKET_MAX_SIZE];
+byte replySize = 0;
+
+byte packetBuffer[UDP_TX_PACKET_MAX_SIZE];
 
 byte serialBuf[SERIAL_MAX_SIZE];
 byte serialIndex = 0;
+
+CRGB leds[TOTAL_LEN];
+
+byte statics[5][3];
 
 struct EffectController {
   CRGB (*generator)(byte, byte);
@@ -56,20 +71,18 @@ void setup() {
   //FastLED Setup
   LEDS.addLeds<WS2812, DATA_PIN, GRB>(&leds[STRIP_START], STRIP_LEN);
   LEDS.addLeds<WS2811, DATA_PIN, RGB>(&leds[XMAS_START], XMAS_LEN);
-  LEDS.setBrightness(255);
-
+  LEDS.setBrightness(50);
   for (byte i = 0; i < TOTAL_LEN; i++) {
     leds[i] = CRGB(0, 0, 0);
   }
-
   FastLED.show();
-//
-//  EffectController myNewEffect;
-//  myNewEffect.generator = &getSpectrum;
-//  myNewEffect.data[0] = 0;
-//  myNewEffect.effect = &shiftForever;
-//  myNewEffect.threadID = 202;
-//  registerEffect(&myNewEffect);
+
+  //Ethernet setup
+  Ethernet.begin(mac, IPAddress(EEPROM.read(ADDR_ETH), EEPROM.read(ADDR_ETH + 1), EEPROM.read(ADDR_ETH + 2), EEPROM.read(ADDR_ETH + 3)));
+  webserver.begin();
+  socket.begin(EEPROM.read(ADDR_UDP) * 256 + EEPROM.read(ADDR_UDP + 1));
+
+  sdActive = SD.begin(4);
 
 }
 
@@ -77,5 +90,7 @@ void loop() {
 
   runEffectThreads();
   checkSerial();
+  checkSocket();
+  checkServer();
 
 }

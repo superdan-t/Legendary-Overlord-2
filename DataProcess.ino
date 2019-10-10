@@ -133,7 +133,7 @@ void processData(byte *buf, char inType) {
 
     if (buf[1] == 0) {
 
-      //UDP Server Port
+      //UDP Server Port: This is fuckin broken and I didn't know it for months
       socketPort = buf[2];
       byte b = 0;
       byte c = 0;

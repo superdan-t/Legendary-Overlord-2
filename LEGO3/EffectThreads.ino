@@ -10,7 +10,7 @@ byte registerEffect(EffectController *ec) {
       effectThreads[i].generator = ec->generator;
       effectThreads[i].effect = ec->effect;
       effectThreads[i].threadID = ec->threadID;
-      for (byte j = 0; j < 10; j++) {
+      for (byte j = 0; j < 8; j++) {
         effectThreads[i].data[j] = ec->data[j];
       }
 
@@ -38,7 +38,7 @@ void runEffectThreads() {
   for (byte i = 0; i < 16; i++) {
     //The effect will return "true" if it has finished, signaling to kill the thread
     if (((~effectThreadStates) | 1 << i) & effectThreadStates) {
-    if (effectThreads[i].effect(&effectThreads[i])) {
+      if (effectThreads[i].effect(&effectThreads[i])) {
         killEffectThread(i);
       }
     }
