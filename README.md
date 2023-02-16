@@ -1,8 +1,19 @@
 # Legendary Overlord 2.0
 
-This project is for an Arduino Mega microcontroller to manage a variety of systems in a household. Beginning as a lamp switched by an old TV remote, my "RoomControl" project has been reformed, revived, and recreated many times by myself. Some versions in the past weren't even completed to a functional level. The best build to date was called "Mythic Overlord," a functional extension of the Legendary Overlord. Mythic attempted to make the code run lighter, but ultimately failed, since the simplicity of the base resulted in greater complexity and redundancy in once simple functions. ~~As of right now, this repository is *not* functional, as it is under development.~~ This is actually coming along pretty well and there are multiple functional pieces, including an I2C slave to expand your reach with less wire and, of course, the master device.
+## Deprecated Project Notice
+I have not updated or otherwise maintained this project since 2019, my first semester of undergrad. In its current state, the project may be incomplete, buggy, completely broken, or absolutely fabulous. The code hasn’t been relevant in any of my technical projects since then, and I have no intention of ever using this project again. My program design skills, quality standards, language preferences, and other technical abilities have developed a lot since 2019, assisted by my interest in maintaining projects outside of academia. That being said, I have decided to keep my old projects public as I reflect on my own educational journey.
 
-Documentation may appear here spontaneously. One day it will be organized, but it will begin as notes for myself to keep track of things.
+## Description
+
+This project is for an Arduino Mega microcontroller to automate a variety of systems in a household (particularly lights). Beginning as a lamp switched by an old TV remote, my "RoomControl" was my first non-trivial Arduino project. In these early days, I learned a lot very quickly, so I frequently rewrote the project to use my new-found programming skills. Each iteration involved "upgrading" the name until they became comically intense. The best build to date was called "Mythic Overlord," a functional extension of the Legendary Overlord. Mythic attempted to make the code run lighter, but ultimately failed, since the simplicity of the base resulted in greater complexity and redundancy in once simple functions.
+Documentation may appear here spontaneously. ~~One day it will be organized, but it will begin as notes for myself to keep track of things.~~
+
+### Subprojects:
+* Root: Main project as described above. Requires an LCD screen and Ethernet shield with SD card. Has a fun web interface.
+* LEGO2-OLD: Incomplete early prototype. Probably should've been deleted, but I'm a few years late for that.
+* LEGO2-Serial-Only: Version of the root that only offers lighting control and can be controlled over Serial or I2C
+* LEGO3: Project restart in first semester of undergrad that reflects a design philosophy change. Instead of being able to give each light channel an effect, effects were made separate and could apply to a range of channels. This was a logical step for controlling individually-addressable LED strips where viewing each LED as a separate channel was logicially clunky and required tons of memory.
+* LightingControlMaster: Contains some prototype code relating to dimmers.
 
 ## Documentation
 
